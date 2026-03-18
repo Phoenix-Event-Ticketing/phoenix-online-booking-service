@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  booking-service:
+    build: .
+    container_name: booking-service
+    ports:
+      - "8083:8083"
+    environment:
+      APP_PORT: 8083
+      MONGODB_URI: mongodb://mongo:27017/booking_db
+      MONGODB_DATABASE: booking_db
+      JWT_SECRET: replace_with_strong_secret
+      JWT_ISSUER: phoenix-online-auth
+      EVENT_SERVICE_BASE_URL: http://host.docker.internal:8081
+      INVENTORY_SERVICE_BASE_URL: http://host.docker.internal:8082
+      PAYMENT_SERVICE_BASE_URL: http://host.docker.internal:8084
+      APP_ENV: dev
+      LOG_LEVEL: INFO
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:7
+    container_name: booking-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

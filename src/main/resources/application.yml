@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: ${APP_NAME:phoenix-online-booking-service}
+
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/booking_db}
+      database: ${MONGODB_DATABASE:booking_db}
+
+server:
+  port: ${APP_PORT:8083}
+
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+
+app:
+  env: ${APP_ENV:dev}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:replace_with_strong_secret}
+    issuer: ${JWT_ISSUER:phoenix-online-auth}
+
+services:
+  event:
+    base-url: ${EVENT_SERVICE_BASE_URL:http://localhost:8081}
+  inventory:
+    base-url: ${INVENTORY_SERVICE_BASE_URL:http://localhost:8082}
+  payment:
+    base-url: ${PAYMENT_SERVICE_BASE_URL:http://localhost:8084}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
