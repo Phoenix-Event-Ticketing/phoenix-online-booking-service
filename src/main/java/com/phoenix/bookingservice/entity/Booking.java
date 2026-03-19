@@ -29,6 +29,8 @@ public class Booking {
     private Integer quantity;
     private BigDecimal totalAmount;
 
+    private String inventoryReservationId;
+
     private BookingStatus bookingStatus;
     private PaymentStatus paymentStatus;
 

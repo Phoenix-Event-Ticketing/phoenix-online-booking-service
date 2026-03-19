@@ -6,6 +6,9 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import com.phoenix.bookingservice.client.EventServiceClient;
+import com.phoenix.bookingservice.client.InventoryServiceClient;
+import com.phoenix.bookingservice.client.dto.HoldInventoryResponse;
 import com.phoenix.bookingservice.dto.BookingResponse;
 import com.phoenix.bookingservice.dto.CreateBookingRequest;
 import com.phoenix.bookingservice.entity.Booking;
@@ -21,27 +24,51 @@ import lombok.RequiredArgsConstructor;
 public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
+    private final EventServiceClient eventServiceClient;
+    private final InventoryServiceClient inventoryServiceClient;
 
     @Override
     public BookingResponse createBooking(CreateBookingRequest request) {
+        eventServiceClient.verifyEventExistsAndIsActive(request.getEventId());
+        inventoryServiceClient.checkAvailability(
+                request.getEventId(),
+                request.getTicketType(),
+                request.getQuantity()
+        );
+
+        String bookingId = generateUniqueBookingId();
+
+        HoldInventoryResponse holdResponse = inventoryServiceClient.holdTickets(
+                bookingId,
+                request.getEventId(),
+                request.getTicketType(),
+                request.getQuantity()
+        );
+
         Instant now = Instant.now();
 
         Booking booking = Booking.builder()
-                .bookingId(generateUniqueBookingId())
+                .bookingId(bookingId)
                 .eventId(request.getEventId())
                 .customerName(request.getCustomerName())
                 .customerEmail(request.getCustomerEmail())
                 .ticketType(request.getTicketType())
                 .quantity(request.getQuantity())
                 .totalAmount(request.getTotalAmount())
+                .inventoryReservationId(holdResponse.getReservationId())
                 .bookingStatus(BookingStatus.PENDING)
                 .paymentStatus(PaymentStatus.PENDING)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
 
-        Booking savedBooking = bookingRepository.save(booking);
-        return mapToResponse(savedBooking);
+        try {
+            Booking savedBooking = bookingRepository.save(booking);
+            return mapToResponse(savedBooking);
+        } catch (RuntimeException ex) {
+            safelyReleaseReservation(holdResponse.getReservationId(), bookingId);
+            throw ex;
+        }
     }
 
     @Override
@@ -58,6 +85,16 @@ public class BookingServiceImpl implements BookingService {
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    private void safelyReleaseReservation(String reservationId, String bookingId) {
+        try {
+            if (reservationId != null && !reservationId.isBlank()) {
+                inventoryServiceClient.releaseTickets(reservationId, bookingId);
+            }
+        } catch (Exception ignored) {
+            // intentionally ignored to preserve original failure
+        }
     }
 
     private String generateUniqueBookingId() {
