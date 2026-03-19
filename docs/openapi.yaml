@@ -1,0 +1,10 @@
+openapi: 3.0.3
+info:
+  title: Phoenix Online Booking Service API
+  version: 1.0.0
+  description: API contract for the Phoenix Online Booking Service
+
+servers:
+  - url: http://localhost:8083
+
+paths: {}
