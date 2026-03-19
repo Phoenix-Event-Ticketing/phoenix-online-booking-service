@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.phoenix.bookingservice.dto.BookingResponse;
 import com.phoenix.bookingservice.dto.CreateBookingRequest;
+import com.phoenix.bookingservice.dto.PaymentCallbackRequest;
+import com.phoenix.bookingservice.dto.StartPaymentResponse;
 import com.phoenix.bookingservice.service.BookingService;
 
 import jakarta.validation.Valid;
@@ -33,5 +35,15 @@ public class BookingController {
     @GetMapping("/customer/{email}")
     public List<BookingResponse> getBookingsByCustomerEmail(@PathVariable String email) {
         return bookingService.getBookingsByCustomerEmail(email);
+    }
+
+    @PostMapping("/{bookingId}/start-payment")
+    public StartPaymentResponse startPayment(@PathVariable String bookingId) {
+        return bookingService.startPayment(bookingId);
+    }
+
+    @PostMapping("/payment-callback")
+    public BookingResponse handlePaymentCallback(@Valid @RequestBody PaymentCallbackRequest request) {
+        return bookingService.handlePaymentCallback(request);
     }
 }

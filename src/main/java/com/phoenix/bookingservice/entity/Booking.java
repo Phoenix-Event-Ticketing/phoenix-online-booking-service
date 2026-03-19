@@ -31,6 +31,10 @@ public class Booking {
 
     private String inventoryReservationId;
 
+    private String paymentReferenceId;
+    private String paymentUrl;
+    private String paymentTransactionId;
+
     private BookingStatus bookingStatus;
     private PaymentStatus paymentStatus;
 
