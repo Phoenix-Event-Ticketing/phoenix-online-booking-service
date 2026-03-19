@@ -1,0 +1,15 @@
+package com.phoenix.bookingservice.client.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class HoldInventoryRequest {
+    private String bookingId;
+    private String eventId;
+    private String ticketType;
+    private Integer quantity;
+}
