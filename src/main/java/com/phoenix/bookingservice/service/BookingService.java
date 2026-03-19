@@ -4,6 +4,8 @@ import java.util.List;
 
 import com.phoenix.bookingservice.dto.BookingResponse;
 import com.phoenix.bookingservice.dto.CreateBookingRequest;
+import com.phoenix.bookingservice.dto.PaymentCallbackRequest;
+import com.phoenix.bookingservice.dto.StartPaymentResponse;
 
 public interface BookingService {
 
@@ -12,4 +14,8 @@ public interface BookingService {
     BookingResponse getBookingByBookingId(String bookingId);
 
     List<BookingResponse> getBookingsByCustomerEmail(String email);
+
+    StartPaymentResponse startPayment(String bookingId);
+
+    BookingResponse handlePaymentCallback(PaymentCallbackRequest request);
 }

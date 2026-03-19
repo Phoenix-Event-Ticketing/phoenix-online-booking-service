@@ -1,8 +1,5 @@
 package com.phoenix.bookingservice.dto;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-
 import com.phoenix.bookingservice.entity.BookingStatus;
 import com.phoenix.bookingservice.entity.PaymentStatus;
 
@@ -15,23 +12,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BookingResponse {
-
-    private String id;
+public class StartPaymentResponse {
     private String bookingId;
-    private String eventId;
-    private String customerName;
-    private String customerEmail;
-    private String ticketType;
-    private Integer quantity;
-    private BigDecimal totalAmount;
-
     private String paymentReferenceId;
     private String paymentUrl;
-    private String paymentTransactionId;
-
     private BookingStatus bookingStatus;
     private PaymentStatus paymentStatus;
-    private Instant createdAt;
-    private Instant updatedAt;
 }

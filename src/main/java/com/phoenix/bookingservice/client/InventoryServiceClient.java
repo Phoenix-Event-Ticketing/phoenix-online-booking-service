@@ -8,6 +8,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import com.phoenix.bookingservice.client.dto.ConfirmInventoryRequest;
 import com.phoenix.bookingservice.client.dto.HoldInventoryRequest;
 import com.phoenix.bookingservice.client.dto.HoldInventoryResponse;
 import com.phoenix.bookingservice.client.dto.InventoryAvailabilityResponse;
@@ -88,6 +89,18 @@ public class InventoryServiceClient {
             throw new ExternalServiceException("Inventory hold request failed: " + ex.getStatusCode(), ex);
         } catch (RestClientException ex) {
             throw new ExternalServiceException("Failed to reserve tickets through Inventory Service", ex);
+        }
+    }
+
+    public void confirmTickets(String reservationId, String bookingId) {
+        String url = inventoryServiceBaseUrl + "/inventory/confirm";
+
+        ConfirmInventoryRequest request = new ConfirmInventoryRequest(reservationId, bookingId);
+
+        try {
+            restTemplate.postForEntity(url, request, Void.class);
+        } catch (RestClientException ex) {
+            throw new ExternalServiceException("Failed to confirm reserved tickets through Inventory Service", ex);
         }
     }
 
