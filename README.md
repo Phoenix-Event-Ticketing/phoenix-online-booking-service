@@ -55,3 +55,21 @@ Online Booking Service for the Phoenix Online microservices application.
 - Cancelling or expiring a booking releases any held inventory reservation
 - Confirmed bookings are not cancelled or expired through this flow
 - Expire endpoint is treated as an internal/system action
+
+## API Contract
+
+The Booking Service API contract is available at:
+
+- docs/openapi.yaml
+
+Swagger UI is exposed at:
+
+- /swagger-ui.html
+
+## Testing
+
+Run the test suite with:
+
+```bash
+mvn test
+```
