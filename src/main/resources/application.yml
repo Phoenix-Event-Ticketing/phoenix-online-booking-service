@@ -19,8 +19,10 @@ app:
 
 security:
   jwt:
-    secret: ${JWT_SECRET:replace_with_strong_secret}
+    secret: ${JWT_SECRET:replace_with_a_minimum_32_character_secret}
     issuer: ${JWT_ISSUER:phoenix-online-auth}
+  internal:
+    service-token: ${INTERNAL_SERVICE_TOKEN:replace_with_internal_service_secret}
 
 services:
   booking:
