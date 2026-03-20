@@ -35,3 +35,11 @@ Online Booking Service for the Phoenix Online microservices application.
 - Internal token protection for service-to-service payment callbacks
 - Stateless Spring Security configuration
 - Secrets supplied through environment variables
+
+## Logging
+
+- Structured JSON-style logs written to console
+- request_id and trace_id support for request correlation
+- operation and metadata fields for better troubleshooting
+- outbound service-call logging for Event, Inventory, and Payment integrations
+- no sensitive values such as secrets or JWT tokens should be logged
