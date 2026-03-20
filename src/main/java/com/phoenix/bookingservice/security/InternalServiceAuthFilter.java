@@ -39,7 +39,10 @@ public class InternalServiceAuthFilter extends OncePerRequestFilter {
         boolean isPaymentCallback = "POST".equalsIgnoreCase(method)
                 && "/bookings/payment-callback".equals(requestUri);
 
-        if (!isPaymentCallback) {
+        boolean isExpireBooking = "POST".equalsIgnoreCase(method)
+                && requestUri.matches("^/bookings/[^/]+/expire$");
+
+        if (!isPaymentCallback && !isExpireBooking) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -60,7 +63,7 @@ public class InternalServiceAuthFilter extends OncePerRequestFilter {
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
-                        "internal-payment-service",
+                        "internal-booking-lifecycle-service",
                         null,
                         List.of(new SimpleGrantedAuthority(BookingPermissions.INTERNAL_SERVICE))
                 );

@@ -1,6 +1,7 @@
 package com.phoenix.bookingservice.security;
 
 import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.PATCH;
 import static org.springframework.http.HttpMethod.POST;
 
 import org.springframework.context.annotation.Bean;
@@ -47,6 +48,9 @@ public class SecurityConfig {
                         .requestMatchers(POST, "/bookings/payment-callback")
                         .hasAuthority(BookingPermissions.INTERNAL_SERVICE)
 
+                        .requestMatchers(POST, "/bookings/*/expire")
+                        .hasAuthority(BookingPermissions.INTERNAL_SERVICE)
+
                         .requestMatchers(POST, "/bookings")
                         .hasAuthority(BookingPermissions.CREATE_BOOKING)
 
@@ -55,6 +59,9 @@ public class SecurityConfig {
 
                         .requestMatchers(GET, "/bookings/**")
                         .hasAuthority(BookingPermissions.VIEW_BOOKINGS)
+
+                        .requestMatchers(PATCH, "/bookings/*/cancel")
+                        .hasAuthority(BookingPermissions.CANCEL_BOOKING)
 
                         .requestMatchers(POST, "/bookings/*/start-payment")
                         .hasAuthority(BookingPermissions.UPDATE_BOOKING)

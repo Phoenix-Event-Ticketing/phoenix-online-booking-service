@@ -18,4 +18,8 @@ public interface BookingService {
     StartPaymentResponse startPayment(String bookingId);
 
     BookingResponse handlePaymentCallback(PaymentCallbackRequest request);
+
+    BookingResponse cancelBooking(String bookingId);
+
+    BookingResponse expireBooking(String bookingId);
 }

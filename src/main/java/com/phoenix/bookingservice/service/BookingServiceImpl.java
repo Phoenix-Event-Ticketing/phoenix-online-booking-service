@@ -209,6 +209,60 @@ public class BookingServiceImpl implements BookingService {
         return mapToResponse(savedBooking);
     }
 
+    @Override
+    public BookingResponse cancelBooking(String bookingId) {
+        log.info("booking cancellation requested", Map.of("bookingId", bookingId));
+
+        Booking booking = findBookingEntityByBookingId(bookingId);
+
+        validateCancelableState(booking);
+
+        safelyReleaseReservation(
+                booking.getInventoryReservationId(),
+                booking.getBookingId()
+        );
+
+        booking.setBookingStatus(BookingStatus.CANCELLED);
+        booking.setPaymentStatus(PaymentStatus.FAILED);
+        booking.setUpdatedAt(Instant.now());
+
+        Booking savedBooking = bookingRepository.save(booking);
+
+        log.info("booking cancelled successfully", Map.of(
+                "bookingId", savedBooking.getBookingId(),
+                "bookingStatus", savedBooking.getBookingStatus()
+        ));
+
+        return mapToResponse(savedBooking);
+    }
+
+    @Override
+    public BookingResponse expireBooking(String bookingId) {
+        log.info("booking expiry requested", Map.of("bookingId", bookingId));
+
+        Booking booking = findBookingEntityByBookingId(bookingId);
+
+        validateExpirableState(booking);
+
+        safelyReleaseReservation(
+                booking.getInventoryReservationId(),
+                booking.getBookingId()
+        );
+
+        booking.setBookingStatus(BookingStatus.EXPIRED);
+        booking.setPaymentStatus(PaymentStatus.FAILED);
+        booking.setUpdatedAt(Instant.now());
+
+        Booking savedBooking = bookingRepository.save(booking);
+
+        log.info("booking expired successfully", Map.of(
+                "bookingId", savedBooking.getBookingId(),
+                "bookingStatus", savedBooking.getBookingStatus()
+        ));
+
+        return mapToResponse(savedBooking);
+    }
+
     private void handleSuccessfulPayment(Booking booking, PaymentCallbackRequest request) {
         inventoryServiceClient.confirmTickets(
                 booking.getInventoryReservationId(),
@@ -250,6 +304,42 @@ public class BookingServiceImpl implements BookingService {
                 "bookingId", booking.getBookingId(),
                 "transactionId", request.getTransactionId()
         ));
+    }
+
+    private void validateCancelableState(Booking booking) {
+        if (booking.getBookingStatus() == BookingStatus.CONFIRMED) {
+            throw new BusinessValidationException("Confirmed bookings cannot be cancelled through this flow");
+        }
+
+        if (booking.getBookingStatus() == BookingStatus.CANCELLED) {
+            throw new BusinessValidationException("Booking is already cancelled");
+        }
+
+        if (booking.getBookingStatus() == BookingStatus.EXPIRED) {
+            throw new BusinessValidationException("Expired booking cannot be cancelled");
+        }
+
+        if (booking.getBookingStatus() == BookingStatus.FAILED) {
+            throw new BusinessValidationException("Failed booking cannot be cancelled");
+        }
+    }
+
+    private void validateExpirableState(Booking booking) {
+        if (booking.getBookingStatus() == BookingStatus.CONFIRMED) {
+            throw new BusinessValidationException("Confirmed bookings cannot be expired");
+        }
+
+        if (booking.getBookingStatus() == BookingStatus.CANCELLED) {
+            throw new BusinessValidationException("Cancelled booking cannot be expired");
+        }
+
+        if (booking.getBookingStatus() == BookingStatus.EXPIRED) {
+            throw new BusinessValidationException("Booking is already expired");
+        }
+
+        if (booking.getBookingStatus() == BookingStatus.FAILED) {
+            throw new BusinessValidationException("Failed booking cannot be expired");
+        }
     }
 
     private Booking findBookingEntityByBookingId(String bookingId) {

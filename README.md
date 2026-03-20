@@ -43,3 +43,15 @@ Online Booking Service for the Phoenix Online microservices application.
 - operation and metadata fields for better troubleshooting
 - outbound service-call logging for Event, Inventory, and Payment integrations
 - no sensitive values such as secrets or JWT tokens should be logged
+
+## Booking Lifecycle Actions
+
+- PATCH /bookings/{bookingId}/cancel
+- POST /bookings/{bookingId}/expire
+
+### Lifecycle rules
+
+- Bookings in PENDING or AWAITING_PAYMENT can be cancelled or expired
+- Cancelling or expiring a booking releases any held inventory reservation
+- Confirmed bookings are not cancelled or expired through this flow
+- Expire endpoint is treated as an internal/system action
