@@ -15,7 +15,6 @@ import lombok.NoArgsConstructor;
 public class StartPaymentResponse {
     private String bookingId;
     private String paymentReferenceId;
-    private String paymentUrl;
     private BookingStatus bookingStatus;
     private PaymentStatus paymentStatus;
 }

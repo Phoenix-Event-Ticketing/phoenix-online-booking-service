@@ -56,6 +56,9 @@ public class SecurityConfig {
                         .requestMatchers(POST, "/bookings")
                         .hasAuthority(BookingPermissions.CREATE_BOOKING)
 
+                        .requestMatchers(GET, "/bookings")
+                        .hasAuthority(BookingPermissions.VIEW_ALL_BOOKINGS)
+
                         .requestMatchers(GET, "/bookings/customer/**")
                         .hasAuthority(BookingPermissions.VIEW_ALL_BOOKINGS)
 
@@ -64,6 +67,9 @@ public class SecurityConfig {
 
                         .requestMatchers(PATCH, "/bookings/*/cancel")
                         .hasAuthority(BookingPermissions.CANCEL_BOOKING)
+
+                        .requestMatchers(PATCH, "/bookings/*")
+                        .hasAuthority(BookingPermissions.EDIT_BOOKING)
 
                         .requestMatchers(POST, "/bookings/*/start-payment")
                         .hasAuthority(BookingPermissions.UPDATE_BOOKING)
