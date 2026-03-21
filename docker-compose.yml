@@ -4,6 +4,7 @@ services:
   booking-service:
     build: .
     container_name: booking-service
+    restart: unless-stopped
     ports:
       - "8083:8083"
     environment:
@@ -20,15 +21,23 @@ services:
       APP_ENV: dev
       LOG_LEVEL: INFO
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
 
   mongo:
     image: mongo:7
     container_name: booking-mongo
+    restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test:
+        ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   mongo_data:

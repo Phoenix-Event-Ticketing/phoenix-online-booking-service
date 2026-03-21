@@ -37,9 +37,19 @@ public class BookingController {
         return bookingService.getBookingsByCustomerEmail(email);
     }
 
+    @PatchMapping("/{bookingId}/cancel")
+    public BookingResponse cancelBooking(@PathVariable String bookingId) {
+        return bookingService.cancelBooking(bookingId);
+    }
+
     @PostMapping("/{bookingId}/start-payment")
     public StartPaymentResponse startPayment(@PathVariable String bookingId) {
         return bookingService.startPayment(bookingId);
+    }
+
+    @PostMapping("/{bookingId}/expire")
+    public BookingResponse expireBooking(@PathVariable String bookingId) {
+        return bookingService.expireBooking(bookingId);
     }
 
     @PostMapping("/payment-callback")

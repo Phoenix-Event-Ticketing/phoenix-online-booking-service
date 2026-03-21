@@ -1,8 +1,9 @@
 target
 .git
-.gitignore
-README.md
+.github
 .vscode
 .idea
 *.log
 .env
+docs
+README.md

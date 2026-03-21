@@ -32,7 +32,7 @@ public final class StructuredLogUtil {
                 .collect(Collectors.joining(",", "{", "}"));
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("")
     private static String valueToJson(Object value) {
         if (value == null) {
             return "null";
