@@ -42,7 +42,9 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
-                                "/api-docs/**"
+                                "/api-docs/**",
+                                "/actuator/health",
+                                "/actuator/info"
                         ).permitAll()
 
                         .requestMatchers(POST, "/bookings/payment-callback")

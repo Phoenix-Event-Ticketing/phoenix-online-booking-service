@@ -39,3 +39,20 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+info:
+  app:
+    name: ${APP_NAME:phoenix-online-booking-service}
+    description: Booking Service for Phoenix Online microservice application
+    version: 1.0.0

@@ -73,3 +73,31 @@ Run the test suite with:
 ```bash
 mvn test
 ```
+
+## DevOps and Deployment
+
+This repository includes:
+
+- Dockerfile for containerizing the Booking Service
+- docker-compose.yml for local development
+- GitHub Actions CI workflow for build and test
+- GitHub Actions workflow for publishing Docker images to GitHub Container Registry
+- SonarCloud workflow for managed SAST / DevSecOps scanning
+- actuator health endpoint for deployment health checks
+
+## Container Registry
+
+Published image target:
+
+- ghcr.io/IT22051448/phoenix-online-booking-service:latest
+
+## Deployment Readiness
+
+Use the following endpoints for operational checks:
+
+- /actuator/health
+- /actuator/info
+
+See:
+
+- docs/DEPLOYMENT.md
