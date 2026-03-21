@@ -28,11 +28,12 @@ paths:
               sample:
                 value:
                   eventId: EVT-1001
-                  customerName: Christy Kingsley
                   customerEmail: christy@example.com
                   ticketType: VIP
                   quantity: 2
                   totalAmount: 5000.00
+                  seat: A123
+                  userId: usr-001
       responses:
         "201":
           description: Booking created successfully
@@ -48,6 +49,25 @@ paths:
           description: Forbidden
         "502":
           description: Downstream integration error
+    get:
+      tags: [Bookings]
+      summary: List all bookings
+      description: Requires JWT permission VIEW_ALL_BOOKINGS
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: All bookings returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BookingResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
 
   /bookings/{bookingId}:
     get:
@@ -69,6 +89,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BookingResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Booking not found
+    patch:
+      tags: [Bookings]
+      summary: Update booking details
+      description: Partial update. Requires JWT permission EDIT_BOOKING. Does not change booking or payment status.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: BKG-ABC1234567
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBookingRequest"
+            examples:
+              seatOnly:
+                value:
+                  seat: B200
+      responses:
+        "200":
+          description: Booking updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingResponse"
+        "400":
+          description: Validation or no fields to update
         "401":
           description: Unauthorized
         "403":
@@ -237,22 +295,50 @@ components:
       name: X-Internal-Service-Token
 
   schemas:
-    CreateBookingRequest:
+    UpdateBookingRequest:
       type: object
-      required:
-        - eventId
-        - customerName
-        - customerEmail
-        - ticketType
-        - quantity
-        - totalAmount
+      description: All properties optional; at least one must be provided.
       properties:
         eventId:
           type: string
           example: EVT-1001
-        customerName:
+        customerEmail:
           type: string
-          example: Christy Kingsley
+          format: email
+          example: christy@example.com
+        seat:
+          type: string
+          example: A123
+        userId:
+          type: string
+          example: usr-001
+        ticketType:
+          type: string
+          example: VIP
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+        totalAmount:
+          type: number
+          format: double
+          minimum: 0.01
+          example: 5000.00
+
+    CreateBookingRequest:
+      type: object
+      required:
+        - eventId
+        - customerEmail
+        - ticketType
+        - quantity
+        - totalAmount
+        - seat
+        - userId
+      properties:
+        eventId:
+          type: string
+          example: EVT-1001
         customerEmail:
           type: string
           example: christy@example.com
@@ -266,6 +352,12 @@ components:
           type: number
           format: double
           example: 5000.00
+        seat:
+          type: string
+          example: A123
+        userId:
+          type: string
+          example: usr-001
 
     PaymentCallbackRequest:
       type: object
@@ -296,9 +388,6 @@ components:
         paymentReferenceId:
           type: string
           example: PAY-123456
-        paymentUrl:
-          type: string
-          example: https://payment.example/checkout/123
         bookingStatus:
           type: string
           example: AWAITING_PAYMENT
@@ -318,12 +407,15 @@ components:
         eventId:
           type: string
           example: EVT-1001
-        customerName:
+        userId:
           type: string
-          example: Christy Kingsley
+          example: usr-001
         customerEmail:
           type: string
           example: christy@example.com
+        seat:
+          type: string
+          example: A123
         ticketType:
           type: string
           example: VIP
@@ -337,9 +429,6 @@ components:
         paymentReferenceId:
           type: string
           example: PAY-123456
-        paymentUrl:
-          type: string
-          example: https://payment.example/checkout/123
         paymentTransactionId:
           type: string
           example: TXN-0001

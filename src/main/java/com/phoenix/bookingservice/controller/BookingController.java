@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import com.phoenix.bookingservice.dto.BookingResponse;
 import com.phoenix.bookingservice.dto.CreateBookingRequest;
 import com.phoenix.bookingservice.dto.PaymentCallbackRequest;
+import com.phoenix.bookingservice.dto.UpdateBookingRequest;
 import com.phoenix.bookingservice.dto.StartPaymentResponse;
 import com.phoenix.bookingservice.service.BookingService;
 
@@ -27,9 +28,9 @@ public class BookingController {
         return bookingService.createBooking(request);
     }
 
-    @GetMapping("/{bookingId}")
-    public BookingResponse getBookingById(@PathVariable String bookingId) {
-        return bookingService.getBookingByBookingId(bookingId);
+    @GetMapping
+    public List<BookingResponse> getAllBookings() {
+        return bookingService.getAllBookings();
     }
 
     @GetMapping("/customer/{email}")
@@ -40,6 +41,19 @@ public class BookingController {
     @PatchMapping("/{bookingId}/cancel")
     public BookingResponse cancelBooking(@PathVariable String bookingId) {
         return bookingService.cancelBooking(bookingId);
+    }
+
+    @PatchMapping("/{bookingId}")
+    public BookingResponse updateBooking(
+            @PathVariable String bookingId,
+            @Valid @RequestBody UpdateBookingRequest request
+    ) {
+        return bookingService.updateBooking(bookingId, request);
+    }
+
+    @GetMapping("/{bookingId}")
+    public BookingResponse getBookingById(@PathVariable String bookingId) {
+        return bookingService.getBookingByBookingId(bookingId);
     }
 
     @PostMapping("/{bookingId}/start-payment")

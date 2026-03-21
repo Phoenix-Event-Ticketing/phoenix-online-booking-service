@@ -23,8 +23,9 @@ public class Booking {
 
     private String bookingId;
     private String eventId;
-    private String customerName;
+    private String userId;
     private String customerEmail;
+    private String seat;
     private String ticketType;
     private Integer quantity;
     private BigDecimal totalAmount;
@@ -32,7 +33,6 @@ public class Booking {
     private String inventoryReservationId;
 
     private String paymentReferenceId;
-    private String paymentUrl;
     private String paymentTransactionId;
 
     private BookingStatus bookingStatus;

@@ -14,6 +14,7 @@ import com.phoenix.bookingservice.client.dto.CreatePaymentResponse;
 import com.phoenix.bookingservice.client.dto.HoldInventoryResponse;
 import com.phoenix.bookingservice.dto.BookingResponse;
 import com.phoenix.bookingservice.dto.CreateBookingRequest;
+import com.phoenix.bookingservice.dto.UpdateBookingRequest;
 import com.phoenix.bookingservice.dto.PaymentCallbackRequest;
 import com.phoenix.bookingservice.dto.StartPaymentResponse;
 import com.phoenix.bookingservice.entity.Booking;
@@ -41,9 +42,11 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse createBooking(CreateBookingRequest request) {
         log.info("booking creation started", Map.of(
                 "eventId", request.getEventId(),
+                "userId", request.getUserId(),
                 "customerEmail", request.getCustomerEmail(),
                 "ticketType", request.getTicketType(),
-                "quantity", request.getQuantity()
+                "quantity", request.getQuantity(),
+                "seat", request.getSeat()
         ));
 
         eventServiceClient.verifyEventExistsAndIsActive(request.getEventId());
@@ -67,8 +70,9 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = Booking.builder()
                 .bookingId(bookingId)
                 .eventId(request.getEventId())
-                .customerName(request.getCustomerName())
+                .userId(request.getUserId())
                 .customerEmail(request.getCustomerEmail())
+                .seat(request.getSeat().trim())
                 .ticketType(request.getTicketType())
                 .quantity(request.getQuantity())
                 .totalAmount(request.getTotalAmount())
@@ -99,6 +103,68 @@ public class BookingServiceImpl implements BookingService {
 
             throw ex;
         }
+    }
+
+    @Override
+    public List<BookingResponse> getAllBookings() {
+        log.info("booking list all requested", Map.of());
+
+        return bookingRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    public BookingResponse updateBooking(String bookingId, UpdateBookingRequest request) {
+        log.info("booking update requested", Map.of("bookingId", bookingId));
+
+        Booking booking = findBookingEntityByBookingId(bookingId);
+
+        boolean updated = false;
+
+        if (request.getEventId() != null && !request.getEventId().isBlank()) {
+            booking.setEventId(request.getEventId().trim());
+            updated = true;
+        }
+        if (request.getCustomerEmail() != null && !request.getCustomerEmail().isBlank()) {
+            booking.setCustomerEmail(request.getCustomerEmail().trim());
+            updated = true;
+        }
+        if (request.getSeat() != null && !request.getSeat().isBlank()) {
+            booking.setSeat(request.getSeat().trim());
+            updated = true;
+        }
+        if (request.getUserId() != null && !request.getUserId().isBlank()) {
+            booking.setUserId(request.getUserId().trim());
+            updated = true;
+        }
+        if (request.getTicketType() != null && !request.getTicketType().isBlank()) {
+            booking.setTicketType(request.getTicketType().trim());
+            updated = true;
+        }
+        if (request.getQuantity() != null) {
+            booking.setQuantity(request.getQuantity());
+            updated = true;
+        }
+        if (request.getTotalAmount() != null) {
+            booking.setTotalAmount(request.getTotalAmount());
+            updated = true;
+        }
+
+        if (!updated) {
+            throw new BusinessValidationException("At least one field must be provided to update the booking");
+        }
+
+        booking.setUpdatedAt(Instant.now());
+        Booking savedBooking = bookingRepository.save(booking);
+
+        log.info("booking updated successfully", Map.of(
+                "bookingId", savedBooking.getBookingId(),
+                "bookingStatus", savedBooking.getBookingStatus()
+        ));
+
+        return mapToResponse(savedBooking);
     }
 
     @Override
@@ -153,7 +219,6 @@ public class BookingServiceImpl implements BookingService {
         CreatePaymentResponse paymentResponse = paymentServiceClient.createPayment(booking);
 
         booking.setPaymentReferenceId(paymentResponse.getPaymentReferenceId());
-        booking.setPaymentUrl(paymentResponse.getPaymentUrl());
         booking.setBookingStatus(BookingStatus.AWAITING_PAYMENT);
         booking.setPaymentStatus(PaymentStatus.PENDING);
         booking.setUpdatedAt(Instant.now());
@@ -379,13 +444,13 @@ public class BookingServiceImpl implements BookingService {
                 .id(booking.getId())
                 .bookingId(booking.getBookingId())
                 .eventId(booking.getEventId())
-                .customerName(booking.getCustomerName())
+                .userId(booking.getUserId())
                 .customerEmail(booking.getCustomerEmail())
+                .seat(booking.getSeat())
                 .ticketType(booking.getTicketType())
                 .quantity(booking.getQuantity())
                 .totalAmount(booking.getTotalAmount())
                 .paymentReferenceId(booking.getPaymentReferenceId())
-                .paymentUrl(booking.getPaymentUrl())
                 .paymentTransactionId(booking.getPaymentTransactionId())
                 .bookingStatus(booking.getBookingStatus())
                 .paymentStatus(booking.getPaymentStatus())
@@ -398,7 +463,6 @@ public class BookingServiceImpl implements BookingService {
         return StartPaymentResponse.builder()
                 .bookingId(booking.getBookingId())
                 .paymentReferenceId(booking.getPaymentReferenceId())
-                .paymentUrl(booking.getPaymentUrl())
                 .bookingStatus(booking.getBookingStatus())
                 .paymentStatus(booking.getPaymentStatus())
                 .build();

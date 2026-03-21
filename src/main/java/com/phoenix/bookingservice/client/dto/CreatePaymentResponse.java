@@ -9,6 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CreatePaymentResponse {
     private String paymentReferenceId;
-    private String paymentUrl;
     private String status;
 }
