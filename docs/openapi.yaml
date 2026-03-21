@@ -7,4 +7,31 @@ info:
 servers:
   - url: http://localhost:8083
 
-paths: {}
+paths:
+  /bookings:
+    post:
+      summary: Create booking
+
+  /bookings/{bookingId}:
+    get:
+      summary: Get booking by bookingId
+
+  /bookings/customer/{email}:
+    get:
+      summary: Get bookings by customer email
+
+  /bookings/{bookingId}/cancel:
+    patch:
+      summary: Cancel booking
+
+  /bookings/{bookingId}/start-payment:
+    post:
+      summary: Start payment for booking
+
+  /bookings/{bookingId}/expire:
+    post:
+      summary: Expire booking
+
+  /bookings/payment-callback:
+    post:
+      summary: Handle payment callback
