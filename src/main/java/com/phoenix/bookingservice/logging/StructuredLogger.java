@@ -17,19 +17,26 @@ public class StructuredLogger {
         return new StructuredLogger(clazz);
     }
 
+    private static String toEventId(String message) {
+        if (message == null || message.isEmpty()) {
+            return "unknown";
+        }
+        return message.toLowerCase().replaceAll("\\s+", "_").replaceAll("[^a-z0-9_]", "");
+    }
+
     public void info(String message, Map<String, Object> metadata) {
-        logger.info(StructuredLogUtil.toJson(message, metadata));
+        logger.info(StructuredLogUtil.toJson("INFO", toEventId(message), message));
     }
 
     public void warn(String message, Map<String, Object> metadata) {
-        logger.warn(StructuredLogUtil.toJson(message, metadata));
+        logger.warn(StructuredLogUtil.toJson("WARN", toEventId(message), message));
     }
 
     public void error(String message, Map<String, Object> metadata) {
-        logger.error(StructuredLogUtil.toJson(message, metadata));
+        logger.error(StructuredLogUtil.toJson("ERROR", toEventId(message), message));
     }
 
     public void error(String message, Map<String, Object> metadata, Throwable ex) {
-        logger.error(StructuredLogUtil.toJson(message, metadata), ex);
+        logger.error(StructuredLogUtil.toJson("ERROR", toEventId(message), message), ex);
     }
 }
