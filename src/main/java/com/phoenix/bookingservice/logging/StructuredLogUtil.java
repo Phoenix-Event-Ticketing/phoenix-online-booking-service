@@ -7,7 +7,20 @@ import java.util.stream.Collectors;
 
 public final class StructuredLogUtil {
 
+    private static final String CONTROL_CHARS_PATTERN = "[\\n\\r\\u0000-\\u001F\\u007F]";
+
     private StructuredLogUtil() {
+    }
+
+    /**
+     * Sanitizes user-controlled input for safe logging to prevent log injection (S5145).
+     * Removes newlines, carriage returns, and other control characters.
+     */
+    public static String sanitizeForLog(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+        return input.replaceAll(CONTROL_CHARS_PATTERN, " ");
     }
 
     public static String toJson(String message, Map<String, Object> metadata) {
@@ -32,14 +45,13 @@ public final class StructuredLogUtil {
                 .collect(Collectors.joining(",", "{", "}"));
     }
 
-    @SuppressWarnings("")
     private static String valueToJson(Object value) {
         if (value == null) {
             return "null";
         }
 
         if (value instanceof String str) {
-            return "\"" + escape(str) + "\"";
+            return "\"" + escape(sanitizeForLog(str)) + "\"";
         }
 
         if (value instanceof Number || value instanceof Boolean) {
@@ -52,7 +64,7 @@ public final class StructuredLogUtil {
             return mapToJson(converted);
         }
 
-        return "\"" + escape(String.valueOf(value)) + "\"";
+        return "\"" + escape(sanitizeForLog(String.valueOf(value))) + "\"";
     }
 
     private static String escape(String input) {

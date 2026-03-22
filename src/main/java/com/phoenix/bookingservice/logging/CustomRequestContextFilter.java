@@ -50,8 +50,8 @@ public class CustomRequestContextFilter extends OncePerRequestFilter {
         log.info(
                 "{{\"event\":\"request_started\",\"method\":\"{}\",\"path\":\"{}\",\"query\":\"{}\"}}",
                 request.getMethod(),
-                request.getRequestURI(),
-                safeQuery(request.getQueryString())
+                StructuredLogUtil.sanitizeForLog(request.getRequestURI()),
+                StructuredLogUtil.sanitizeForLog(safeQuery(request.getQueryString()))
         );
 
         try {
@@ -62,7 +62,7 @@ public class CustomRequestContextFilter extends OncePerRequestFilter {
             log.info(
                     "{{\"event\":\"request_completed\",\"method\":\"{}\",\"path\":\"{}\",\"status\":{},\"duration_ms\":{}}}",
                     request.getMethod(),
-                    request.getRequestURI(),
+                    StructuredLogUtil.sanitizeForLog(request.getRequestURI()),
                     response.getStatus(),
                     durationMs
             );
