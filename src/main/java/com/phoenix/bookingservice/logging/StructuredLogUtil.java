@@ -23,19 +23,61 @@ public final class StructuredLogUtil {
         return input.replaceAll(CONTROL_CHARS_PATTERN, " ");
     }
 
-    public static String toJson(String message, Map<String, Object> metadata) {
+    /**
+     * Derives a route pattern from path for logging (e.g. /bookings/BKG-123 -> /bookings/:id).
+     */
+    public static String deriveRoute(String path) {
+        if (path == null || path.isEmpty()) {
+            return path;
+        }
+        String result = path.replaceAll("/bookings/customer/[^/]+", "/bookings/customer/:email");
+        return result.replaceAll("/bookings/[^/]+(/|$)", "/bookings/:id$1");
+    }
+
+    /**
+     * Builds log JSON with level, event, message, and http block from RequestContext.
+     */
+    public static String toJson(String level, String event, String message) {
         Map<String, Object> log = new LinkedHashMap<>();
         log.put("timestamp", Instant.now().toString());
+        log.put("level", level);
         log.put("service", "phoenix-online-booking-service");
         log.put("environment", System.getenv().getOrDefault("APP_ENV", "dev"));
+        log.put("event", event);
         log.put("request_id", RequestContext.getRequestId());
         log.put("trace_id", RequestContext.getTraceId());
         log.put("user_id", RequestContext.getUserId());
         log.put("operation", RequestContext.getOperation());
         log.put("message", message);
-        log.put("metadata", metadata == null ? Map.of() : metadata);
+        log.put("http", buildHttpBlock());
 
         return mapToJson(log);
+    }
+
+    private static Map<String, Object> buildHttpBlock() {
+        Map<String, Object> http = new LinkedHashMap<>();
+        String method = RequestContext.getHttpMethod();
+        String path = RequestContext.getHttpPath();
+        String route = RequestContext.getHttpRoute();
+        Integer statusCode = RequestContext.getHttpStatusCode();
+        Long responseTimeMs = RequestContext.getHttpResponseTimeMs();
+
+        if (method != null) {
+            http.put("method", method);
+        }
+        if (path != null) {
+            http.put("path", sanitizeForLog(path));
+        }
+        if (route != null) {
+            http.put("route", route);
+        }
+        if (statusCode != null) {
+            http.put("status_code", statusCode);
+        }
+        if (responseTimeMs != null) {
+            http.put("response_time_ms", responseTimeMs);
+        }
+        return http;
     }
 
     private static String mapToJson(Map<String, Object> map) {
