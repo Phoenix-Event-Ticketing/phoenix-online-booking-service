@@ -46,3 +46,6 @@ docker-data/
 
 ### Coverage ###
 coverage/
+
+### GCR Key ###
+key.json
