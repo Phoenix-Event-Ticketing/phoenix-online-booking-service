@@ -226,7 +226,7 @@ paths:
       tags: [Bookings]
       summary: Expire booking
       security:
-        - internalServiceToken: []
+        - internalServiceId: []
       parameters:
         - name: bookingId
           in: path
@@ -253,7 +253,7 @@ paths:
       tags: [Bookings]
       summary: Handle payment callback
       security:
-        - internalServiceToken: []
+        - internalServiceId: []
       requestBody:
         required: true
         content:
@@ -289,10 +289,11 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-    internalServiceToken:
+    internalServiceId:
       type: apiKey
       in: header
-      name: X-Internal-Service-Token
+      name: X-Internal-Service-Id
+      description: Caller service id; must have required permission in INTERNAL_SERVICE_PERMISSIONS_JSON
 
   schemas:
     UpdateBookingRequest:

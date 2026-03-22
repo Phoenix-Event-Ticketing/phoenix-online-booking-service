@@ -8,16 +8,26 @@ RUN mvn -q -DskipTests dependency:go-offline
 COPY src ./src
 RUN mvn -q clean package -DskipTests
 
-FROM eclipse-temurin:21-jre
+# Exploded layers: dependency layers change rarely → smaller GCR uploads when only app code changes
+FROM eclipse-temurin:21-jre-alpine AS extract
+WORKDIR /app
+COPY --from=build /app/target/bookingservice-0.0.1-SNAPSHOT.jar app.jar
+RUN java -Djarmode=tools -jar app.jar extract --layers --launcher --destination /app/layers
+
+# Alpine JRE is much smaller than default Ubuntu-based eclipse-temurin:21-jre (~130MB+ savings on base)
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-RUN useradd --system --create-home spring
+RUN addgroup -S spring && adduser -S spring -G spring
 
-COPY --from=build /app/target/bookingservice-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=extract /app/layers/dependencies/ ./
+COPY --from=extract /app/layers/spring-boot-loader/ ./
+COPY --from=extract /app/layers/snapshot-dependencies/ ./
+COPY --from=extract /app/layers/application/ ./
 
 EXPOSE 8083
 
 USER spring
 
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
