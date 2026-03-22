@@ -32,7 +32,7 @@ Online Booking Service for the Phoenix Online microservices application.
 
 - JWT-based authentication for normal Booking API requests
 - Permission-based authorization using claims from JWT tokens
-- Internal token protection for service-to-service payment callbacks
+- Internal callbacks: JSON map service id → permissions (`INTERNAL_SERVICE_PERMISSIONS_JSON`); callers send `X-Internal-Service-Id` (no secrets)
 - Stateless Spring Security configuration
 - Secrets supplied through environment variables
 

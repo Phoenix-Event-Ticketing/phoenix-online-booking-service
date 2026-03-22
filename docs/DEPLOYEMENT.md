@@ -19,7 +19,7 @@ Set these in your target deployment platform:
 - MONGODB_DATABASE=booking_db
 - JWT_SECRET=<strong-secret>
 - JWT_ISSUER=phoenix-online-auth
-- INTERNAL_SERVICE_TOKEN=<internal-callback-secret>
+- INTERNAL_SERVICE_PERMISSIONS_JSON={"payment-service":["PAYMENT_CALLBACK"],"inventory-service":["EXPIRE_BOOKING"]} (callers send `X-Internal-Service-Id`; no secrets)
 - BOOKING_SERVICE_CALLBACK_BASE_URL=<public-base-url-of-booking-service>
 - EVENT_SERVICE_BASE_URL=<public-url-of-event-service>
 - INVENTORY_SERVICE_BASE_URL=<public-url-of-inventory-service>

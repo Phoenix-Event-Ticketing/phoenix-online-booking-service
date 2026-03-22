@@ -22,7 +22,8 @@ security:
     secret: ${JWT_SECRET:replace_with_a_minimum_32_character_secret}
     issuer: ${JWT_ISSUER:phoenix-online-auth}
   internal:
-    service-token: ${INTERNAL_SERVICE_TOKEN:replace_with_internal_service_secret}
+    # JSON: {"service-id":["PERM1","PERM2"],...} - no secrets, permission-based authz.
+    # Set via INTERNAL_SERVICE_PERMISSIONS_JSON or SECURITY_INTERNAL_SERVICE_PERMISSIONS_JSON.
 
 services:
   booking:
