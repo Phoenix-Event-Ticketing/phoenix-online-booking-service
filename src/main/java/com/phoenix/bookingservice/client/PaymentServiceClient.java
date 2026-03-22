@@ -22,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 public class PaymentServiceClient {
 
     private static final StructuredLogger log = StructuredLogger.getLogger(PaymentServiceClient.class);
+    private static final String TARGET_SERVICE = "targetService";
+    private static final String PAYMENT_SERVICE = "payment-service";
 
     private final RestTemplate restTemplate;
 
@@ -42,7 +44,7 @@ public class PaymentServiceClient {
                 "Ticket booking payment for " + booking.getBookingId()
         );
 
-        log.info("calling payment service to create payment", Map.of("targetService", "payment-service"));
+        log.info("calling payment service to create payment", Map.of(TARGET_SERVICE, PAYMENT_SERVICE));
 
         try {
             ResponseEntity<CreatePaymentResponse> response =
@@ -57,16 +59,16 @@ public class PaymentServiceClient {
                 throw new ExternalServiceException("Invalid response received from Payment Service");
             }
 
-            log.info("payment service create payment succeeded", Map.of("targetService", "payment-service"));
+            log.info("payment service create payment succeeded", Map.of(TARGET_SERVICE, PAYMENT_SERVICE));
 
             return body;
 
         } catch (HttpStatusCodeException ex) {
-            log.error("payment service returned an error", Map.of("targetService", "payment-service"), ex);
+            log.error("payment service returned an error", Map.of(TARGET_SERVICE, PAYMENT_SERVICE), ex);
 
             throw new ExternalServiceException("Payment Service returned an error: " + ex.getStatusCode(), ex);
         } catch (RestClientException ex) {
-            log.error("payment service communication failed", Map.of("targetService", "payment-service"), ex);
+            log.error("payment service communication failed", Map.of(TARGET_SERVICE, PAYMENT_SERVICE), ex);
 
             throw new ExternalServiceException("Failed to communicate with Payment Service", ex);
         }

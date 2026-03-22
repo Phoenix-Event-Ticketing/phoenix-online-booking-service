@@ -22,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 public class EventServiceClient {
 
     private static final StructuredLogger log = StructuredLogger.getLogger(EventServiceClient.class);
+    private static final String TARGET_SERVICE = "targetService";
+    private static final String EVENT_SERVICE = "event-service";
 
     private final RestTemplate restTemplate;
 
@@ -31,7 +33,7 @@ public class EventServiceClient {
     public void verifyEventExistsAndIsActive(String eventId) {
         String url = eventServiceBaseUrl + "/events/" + eventId;
 
-        log.info("calling event service for event validation", Map.of("targetService", "event-service"));
+        log.info("calling event service for event validation", Map.of(TARGET_SERVICE, EVENT_SERVICE));
 
         try {
             ResponseEntity<EventSummaryResponse> response =
@@ -47,18 +49,18 @@ public class EventServiceClient {
                 throw new BusinessValidationException("Selected event is not active");
             }
 
-            log.info("event validation succeeded", Map.of("targetService", "event-service"));
+            log.info("event validation succeeded", Map.of(TARGET_SERVICE, EVENT_SERVICE));
 
         } catch (HttpStatusCodeException ex) {
             if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
                 throw new BusinessValidationException("Event not found for ID: " + eventId);
             }
 
-            log.error("event service returned an error", Map.of("targetService", "event-service"), ex);
+            log.error("event service returned an error", Map.of(TARGET_SERVICE, EVENT_SERVICE), ex);
 
             throw new ExternalServiceException("Event Service returned an error: " + ex.getStatusCode(), ex);
         } catch (RestClientException ex) {
-            log.error("event service communication failed", Map.of("targetService", "event-service"), ex);
+            log.error("event service communication failed", Map.of(TARGET_SERVICE, EVENT_SERVICE), ex);
 
             throw new ExternalServiceException("Failed to communicate with Event Service", ex);
         }
