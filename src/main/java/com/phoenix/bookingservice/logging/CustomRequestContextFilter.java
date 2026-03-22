@@ -37,28 +37,31 @@ public class CustomRequestContextFilter extends OncePerRequestFilter {
 
         String requestId = headerOrRandom(request.getHeader(REQUEST_ID_HEADER));
         String traceId = headerOrRandom(request.getHeader(TRACE_ID_HEADER));
+        String path = request.getRequestURI();
 
         RequestContext.setRequestId(requestId);
         RequestContext.setTraceId(traceId);
         RequestContext.setOperation(request.getMethod());
+        RequestContext.setHttpMethod(request.getMethod());
+        RequestContext.setHttpPath(path);
+        RequestContext.setHttpRoute(StructuredLogUtil.deriveRoute(path));
 
         attachAuthenticatedUserIfPresent();
 
         response.setHeader(REQUEST_ID_HEADER, requestId);
         response.setHeader(TRACE_ID_HEADER, traceId);
 
-        log.info("{{\"event\":\"request_started\"}}");
+        log.info(StructuredLogUtil.toJson("INFO", "request_started", "request started"));
 
         try {
             filterChain.doFilter(request, response);
         } finally {
             long durationMs = System.currentTimeMillis() - start;
 
-            log.info(
-                    "{{\"event\":\"request_completed\",\"status\":{},\"duration_ms\":{}}}",
-                    response.getStatus(),
-                    durationMs
-            );
+            RequestContext.setHttpStatusCode(response.getStatus());
+            RequestContext.setHttpResponseTimeMs(durationMs);
+
+            log.info(StructuredLogUtil.toJson("INFO", "request_completed", "request completed"));
 
             RequestContext.clear();
         }
