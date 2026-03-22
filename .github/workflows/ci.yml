@@ -32,6 +32,14 @@ jobs:
       - name: Package application
         run: mvn -B -DskipTests package
 
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:

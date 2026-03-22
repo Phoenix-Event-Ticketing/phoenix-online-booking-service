@@ -40,14 +40,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingResponse createBooking(CreateBookingRequest request) {
-        log.info("booking creation started", Map.of(
-                "eventId", request.getEventId(),
-                "userId", request.getUserId(),
-                "customerEmail", request.getCustomerEmail(),
-                "ticketType", request.getTicketType(),
-                "quantity", request.getQuantity(),
-                "seat", request.getSeat()
-        ));
+        log.info("booking creation started", Map.of());
 
         eventServiceClient.verifyEventExistsAndIsActive(request.getEventId());
         inventoryServiceClient.checkAvailability(
@@ -86,20 +79,13 @@ public class BookingServiceImpl implements BookingService {
         try {
             Booking savedBooking = bookingRepository.save(booking);
 
-            log.info("booking created successfully", Map.of(
-                    "bookingId", savedBooking.getBookingId(),
-                    "inventoryReservationId", savedBooking.getInventoryReservationId(),
-                    "bookingStatus", savedBooking.getBookingStatus()
-            ));
+            log.info("booking created successfully", Map.of());
 
             return mapToResponse(savedBooking);
         } catch (RuntimeException ex) {
             safelyReleaseReservation(holdResponse.getReservationId(), bookingId);
 
-            log.error("booking creation failed after inventory hold", Map.of(
-                    "bookingId", bookingId,
-                    "inventoryReservationId", holdResponse.getReservationId()
-            ), ex);
+            log.error("booking creation failed after inventory hold", Map.of(), ex);
 
             throw ex;
         }
@@ -117,7 +103,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingResponse updateBooking(String bookingId, UpdateBookingRequest request) {
-        log.info("booking update requested", Map.of("bookingId", bookingId));
+        log.info("booking update requested", Map.of());
 
         Booking booking = findBookingEntityByBookingId(bookingId);
 
@@ -159,24 +145,21 @@ public class BookingServiceImpl implements BookingService {
         booking.setUpdatedAt(Instant.now());
         Booking savedBooking = bookingRepository.save(booking);
 
-        log.info("booking updated successfully", Map.of(
-                "bookingId", savedBooking.getBookingId(),
-                "bookingStatus", savedBooking.getBookingStatus()
-        ));
+        log.info("booking updated successfully", Map.of());
 
         return mapToResponse(savedBooking);
     }
 
     @Override
     public BookingResponse getBookingByBookingId(String bookingId) {
-        log.info("booking lookup by bookingId", Map.of("bookingId", bookingId));
+        log.info("booking lookup by bookingId", Map.of());
         Booking booking = findBookingEntityByBookingId(bookingId);
         return mapToResponse(booking);
     }
 
     @Override
     public List<BookingResponse> getBookingsByCustomerEmail(String email) {
-        log.info("booking lookup by customer email", Map.of("customerEmail", email));
+        log.info("booking lookup by customer email", Map.of());
         return bookingRepository.findByCustomerEmailIgnoreCase(email)
                 .stream()
                 .map(this::mapToResponse)
@@ -185,7 +168,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public StartPaymentResponse startPayment(String bookingId) {
-        log.info("payment initiation started", Map.of("bookingId", bookingId));
+        log.info("payment initiation started", Map.of());
 
         Booking booking = findBookingEntityByBookingId(bookingId);
 
@@ -208,10 +191,7 @@ public class BookingServiceImpl implements BookingService {
                 && booking.getBookingStatus() == BookingStatus.AWAITING_PAYMENT
                 && booking.getPaymentStatus() == PaymentStatus.PENDING) {
 
-            log.info("existing pending payment reused", Map.of(
-                    "bookingId", booking.getBookingId(),
-                    "paymentReferenceId", booking.getPaymentReferenceId()
-            ));
+            log.info("existing pending payment reused", Map.of());
 
             return mapToStartPaymentResponse(booking);
         }
@@ -225,22 +205,14 @@ public class BookingServiceImpl implements BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
 
-        log.info("payment initiation completed", Map.of(
-                "bookingId", savedBooking.getBookingId(),
-                "paymentReferenceId", savedBooking.getPaymentReferenceId(),
-                "bookingStatus", savedBooking.getBookingStatus()
-        ));
+        log.info("payment initiation completed", Map.of());
 
         return mapToStartPaymentResponse(savedBooking);
     }
 
     @Override
     public BookingResponse handlePaymentCallback(PaymentCallbackRequest request) {
-        log.info("payment callback received", Map.of(
-                "bookingId", request.getBookingId(),
-                "paymentReferenceId", request.getPaymentReferenceId(),
-                "paymentStatus", request.getPaymentStatus()
-        ));
+        log.info("payment callback received", Map.of());
 
         Booking booking = findBookingEntityByBookingId(request.getBookingId());
 
@@ -265,18 +237,14 @@ public class BookingServiceImpl implements BookingService {
         booking.setUpdatedAt(Instant.now());
         Booking savedBooking = bookingRepository.save(booking);
 
-        log.info("payment callback processed", Map.of(
-                "bookingId", savedBooking.getBookingId(),
-                "paymentStatus", savedBooking.getPaymentStatus(),
-                "bookingStatus", savedBooking.getBookingStatus()
-        ));
+        log.info("payment callback processed", Map.of());
 
         return mapToResponse(savedBooking);
     }
 
     @Override
     public BookingResponse cancelBooking(String bookingId) {
-        log.info("booking cancellation requested", Map.of("bookingId", bookingId));
+        log.info("booking cancellation requested", Map.of());
 
         Booking booking = findBookingEntityByBookingId(bookingId);
 
@@ -293,17 +261,14 @@ public class BookingServiceImpl implements BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
 
-        log.info("booking cancelled successfully", Map.of(
-                "bookingId", savedBooking.getBookingId(),
-                "bookingStatus", savedBooking.getBookingStatus()
-        ));
+        log.info("booking cancelled successfully", Map.of());
 
         return mapToResponse(savedBooking);
     }
 
     @Override
     public BookingResponse expireBooking(String bookingId) {
-        log.info("booking expiry requested", Map.of("bookingId", bookingId));
+        log.info("booking expiry requested", Map.of());
 
         Booking booking = findBookingEntityByBookingId(bookingId);
 
@@ -320,10 +285,7 @@ public class BookingServiceImpl implements BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
 
-        log.info("booking expired successfully", Map.of(
-                "bookingId", savedBooking.getBookingId(),
-                "bookingStatus", savedBooking.getBookingStatus()
-        ));
+        log.info("booking expired successfully", Map.of());
 
         return mapToResponse(savedBooking);
     }
@@ -338,10 +300,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setBookingStatus(BookingStatus.CONFIRMED);
         booking.setPaymentTransactionId(request.getTransactionId());
 
-        log.info("payment marked as successful", Map.of(
-                "bookingId", booking.getBookingId(),
-                "transactionId", request.getTransactionId()
-        ));
+        log.info("payment marked as successful", Map.of());
     }
 
     private void handleFailedPayment(Booking booking, PaymentCallbackRequest request) {
@@ -354,10 +313,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setBookingStatus(BookingStatus.FAILED);
         booking.setPaymentTransactionId(request.getTransactionId());
 
-        log.warn("payment marked as failed", Map.of(
-                "bookingId", booking.getBookingId(),
-                "transactionId", request.getTransactionId()
-        ));
+        log.warn("payment marked as failed", Map.of());
     }
 
     private void handlePendingPayment(Booking booking, PaymentCallbackRequest request) {
@@ -365,10 +321,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setBookingStatus(BookingStatus.AWAITING_PAYMENT);
         booking.setPaymentTransactionId(request.getTransactionId());
 
-        log.info("payment remains pending", Map.of(
-                "bookingId", booking.getBookingId(),
-                "transactionId", request.getTransactionId()
-        ));
+        log.info("payment remains pending", Map.of());
     }
 
     private void validateCancelableState(Booking booking) {
@@ -418,10 +371,7 @@ public class BookingServiceImpl implements BookingService {
                 inventoryServiceClient.releaseTickets(reservationId, bookingId);
             }
         } catch (Exception ignored) {
-            log.warn("inventory release failed during compensation", Map.of(
-                    "bookingId", bookingId,
-                    "inventoryReservationId", reservationId
-            ));
+            log.warn("inventory release failed during compensation", Map.of());
         }
     }
 

@@ -40,19 +40,14 @@ public class CustomRequestContextFilter extends OncePerRequestFilter {
 
         RequestContext.setRequestId(requestId);
         RequestContext.setTraceId(traceId);
-        RequestContext.setOperation(request.getMethod() + " " + request.getRequestURI());
+        RequestContext.setOperation(request.getMethod());
 
         attachAuthenticatedUserIfPresent();
 
         response.setHeader(REQUEST_ID_HEADER, requestId);
         response.setHeader(TRACE_ID_HEADER, traceId);
 
-        log.info(
-                "{{\"event\":\"request_started\",\"method\":\"{}\",\"path\":\"{}\",\"query\":\"{}\"}}",
-                request.getMethod(),
-                StructuredLogUtil.sanitizeForLog(request.getRequestURI()),
-                StructuredLogUtil.sanitizeForLog(safeQuery(request.getQueryString()))
-        );
+        log.info("{{\"event\":\"request_started\"}}");
 
         try {
             filterChain.doFilter(request, response);
@@ -60,9 +55,7 @@ public class CustomRequestContextFilter extends OncePerRequestFilter {
             long durationMs = System.currentTimeMillis() - start;
 
             log.info(
-                    "{{\"event\":\"request_completed\",\"method\":\"{}\",\"path\":\"{}\",\"status\":{},\"duration_ms\":{}}}",
-                    request.getMethod(),
-                    StructuredLogUtil.sanitizeForLog(request.getRequestURI()),
+                    "{{\"event\":\"request_completed\",\"status\":{},\"duration_ms\":{}}}",
                     response.getStatus(),
                     durationMs
             );
@@ -91,9 +84,5 @@ public class CustomRequestContextFilter extends OncePerRequestFilter {
 
     private String headerOrRandom(String value) {
         return value == null || value.isBlank() ? UUID.randomUUID().toString() : value;
-    }
-
-    private String safeQuery(String query) {
-        return query == null ? "" : query;
     }
 }
