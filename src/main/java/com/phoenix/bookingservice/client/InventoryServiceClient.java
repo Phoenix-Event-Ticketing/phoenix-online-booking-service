@@ -36,12 +36,7 @@ public class InventoryServiceClient {
         String url = inventoryServiceBaseUrl
                 + "/inventory/availability?eventId={eventId}&ticketType={ticketType}";
 
-        log.info("calling inventory service for availability check", Map.of(
-                "targetService", "inventory-service",
-                "eventId", eventId,
-                "ticketType", ticketType,
-                "quantity", quantity
-        ));
+        log.info("calling inventory service for availability check", Map.of("targetService", "inventory-service"));
 
         try {
             ResponseEntity<InventoryAvailabilityResponse> response = restTemplate.getForEntity(
@@ -64,32 +59,18 @@ public class InventoryServiceClient {
                 throw new BusinessValidationException("Requested ticket quantity is not available");
             }
 
-            log.info("inventory availability check succeeded", Map.of(
-                    "targetService", "inventory-service",
-                    "eventId", eventId,
-                    "ticketType", ticketType,
-                    "availableQuantity", availableQuantity
-            ));
+            log.info("inventory availability check succeeded", Map.of("targetService", "inventory-service"));
 
         } catch (HttpStatusCodeException ex) {
             if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
                 throw new BusinessValidationException("Ticket inventory not found for the selected event and ticket type");
             }
 
-            log.error("inventory service returned an error", Map.of(
-                    "targetService", "inventory-service",
-                    "eventId", eventId,
-                    "ticketType", ticketType,
-                    "statusCode", ex.getStatusCode().value()
-            ), ex);
+            log.error("inventory service returned an error", Map.of("targetService", "inventory-service"), ex);
 
             throw new ExternalServiceException("Inventory Service returned an error: " + ex.getStatusCode(), ex);
         } catch (RestClientException ex) {
-            log.error("inventory service communication failed", Map.of(
-                    "targetService", "inventory-service",
-                    "eventId", eventId,
-                    "ticketType", ticketType
-            ), ex);
+            log.error("inventory service communication failed", Map.of("targetService", "inventory-service"), ex);
 
             throw new ExternalServiceException("Failed to communicate with Inventory Service", ex);
         }
@@ -105,13 +86,7 @@ public class InventoryServiceClient {
                 quantity
         );
 
-        log.info("calling inventory service to hold tickets", Map.of(
-                "targetService", "inventory-service",
-                "bookingId", bookingId,
-                "eventId", eventId,
-                "ticketType", ticketType,
-                "quantity", quantity
-        ));
+        log.info("calling inventory service to hold tickets", Map.of("targetService", "inventory-service"));
 
         try {
             ResponseEntity<HoldInventoryResponse> response =
@@ -123,27 +98,16 @@ public class InventoryServiceClient {
                 throw new ExternalServiceException("Invalid hold response received from Inventory Service");
             }
 
-            log.info("inventory hold succeeded", Map.of(
-                    "targetService", "inventory-service",
-                    "bookingId", bookingId,
-                    "reservationId", body.getReservationId()
-            ));
+            log.info("inventory hold succeeded", Map.of("targetService", "inventory-service"));
 
             return body;
 
         } catch (HttpStatusCodeException ex) {
-            log.error("inventory hold failed with downstream error", Map.of(
-                    "targetService", "inventory-service",
-                    "bookingId", bookingId,
-                    "statusCode", ex.getStatusCode().value()
-            ), ex);
+            log.error("inventory hold failed with downstream error", Map.of("targetService", "inventory-service"), ex);
 
             throw new ExternalServiceException("Inventory hold request failed: " + ex.getStatusCode(), ex);
         } catch (RestClientException ex) {
-            log.error("inventory hold communication failed", Map.of(
-                    "targetService", "inventory-service",
-                    "bookingId", bookingId
-            ), ex);
+            log.error("inventory hold communication failed", Map.of("targetService", "inventory-service"), ex);
 
             throw new ExternalServiceException("Failed to reserve tickets through Inventory Service", ex);
         }
@@ -154,26 +118,14 @@ public class InventoryServiceClient {
 
         ConfirmInventoryRequest request = new ConfirmInventoryRequest(reservationId, bookingId);
 
-        log.info("calling inventory service to confirm held tickets", Map.of(
-                "targetService", "inventory-service",
-                "bookingId", bookingId,
-                "reservationId", reservationId
-        ));
+        log.info("calling inventory service to confirm held tickets", Map.of("targetService", "inventory-service"));
 
         try {
             restTemplate.postForEntity(url, request, Void.class);
 
-            log.info("inventory confirmation succeeded", Map.of(
-                    "targetService", "inventory-service",
-                    "bookingId", bookingId,
-                    "reservationId", reservationId
-            ));
+            log.info("inventory confirmation succeeded", Map.of("targetService", "inventory-service"));
         } catch (RestClientException ex) {
-            log.error("inventory confirmation failed", Map.of(
-                    "targetService", "inventory-service",
-                    "bookingId", bookingId,
-                    "reservationId", reservationId
-            ), ex);
+            log.error("inventory confirmation failed", Map.of("targetService", "inventory-service"), ex);
 
             throw new ExternalServiceException("Failed to confirm reserved tickets through Inventory Service", ex);
         }
@@ -184,26 +136,14 @@ public class InventoryServiceClient {
 
         ReleaseInventoryRequest request = new ReleaseInventoryRequest(reservationId, bookingId);
 
-        log.info("calling inventory service to release held tickets", Map.of(
-                "targetService", "inventory-service",
-                "bookingId", bookingId,
-                "reservationId", reservationId
-        ));
+        log.info("calling inventory service to release held tickets", Map.of("targetService", "inventory-service"));
 
         try {
             restTemplate.postForEntity(url, request, Void.class);
 
-            log.info("inventory release succeeded", Map.of(
-                    "targetService", "inventory-service",
-                    "bookingId", bookingId,
-                    "reservationId", reservationId
-            ));
+            log.info("inventory release succeeded", Map.of("targetService", "inventory-service"));
         } catch (RestClientException ex) {
-            log.error("inventory release failed", Map.of(
-                    "targetService", "inventory-service",
-                    "bookingId", bookingId,
-                    "reservationId", reservationId
-            ), ex);
+            log.error("inventory release failed", Map.of("targetService", "inventory-service"), ex);
 
             throw new ExternalServiceException("Failed to release reserved tickets through Inventory Service", ex);
         }

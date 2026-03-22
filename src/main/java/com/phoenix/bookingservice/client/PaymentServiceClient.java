@@ -42,11 +42,7 @@ public class PaymentServiceClient {
                 "Ticket booking payment for " + booking.getBookingId()
         );
 
-        log.info("calling payment service to create payment", Map.of(
-                "targetService", "payment-service",
-                "bookingId", booking.getBookingId(),
-                "amount", booking.getTotalAmount()
-        ));
+        log.info("calling payment service to create payment", Map.of("targetService", "payment-service"));
 
         try {
             ResponseEntity<CreatePaymentResponse> response =
@@ -61,27 +57,16 @@ public class PaymentServiceClient {
                 throw new ExternalServiceException("Invalid response received from Payment Service");
             }
 
-            log.info("payment service create payment succeeded", Map.of(
-                    "targetService", "payment-service",
-                    "bookingId", booking.getBookingId(),
-                    "paymentReferenceId", body.getPaymentReferenceId()
-            ));
+            log.info("payment service create payment succeeded", Map.of("targetService", "payment-service"));
 
             return body;
 
         } catch (HttpStatusCodeException ex) {
-            log.error("payment service returned an error", Map.of(
-                    "targetService", "payment-service",
-                    "bookingId", booking.getBookingId(),
-                    "statusCode", ex.getStatusCode().value()
-            ), ex);
+            log.error("payment service returned an error", Map.of("targetService", "payment-service"), ex);
 
             throw new ExternalServiceException("Payment Service returned an error: " + ex.getStatusCode(), ex);
         } catch (RestClientException ex) {
-            log.error("payment service communication failed", Map.of(
-                    "targetService", "payment-service",
-                    "bookingId", booking.getBookingId()
-            ), ex);
+            log.error("payment service communication failed", Map.of("targetService", "payment-service"), ex);
 
             throw new ExternalServiceException("Failed to communicate with Payment Service", ex);
         }
