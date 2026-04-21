@@ -70,7 +70,7 @@ jobs:
           cd gitops
 
           TARGET_FILE="apps/booking-service/overlays/dev/kustomization.yaml"
-          sed -i -E "s#(^[[:space:]]*newTag:[[:space:]]*).*$#\1${IMAGE_TAG}#" "${TARGET_FILE}"
+          sed -i -E 's|^([[:space:]]*newTag:[[:space:]]*).*$|\1'"${IMAGE_TAG}"'|' "${TARGET_FILE}"
 
           if git diff --quiet -- "${TARGET_FILE}"; then
             echo "No GitOps changes detected for dev"
@@ -94,7 +94,7 @@ jobs:
           cd gitops
 
           TARGET_FILE="apps/booking-service/overlays/prod/kustomization.yaml"
-          sed -i -E "s#(^[[:space:]]*newTag:[[:space:]]*).*$#\1${IMAGE_TAG}#" "${TARGET_FILE}"
+          sed -i -E 's|^([[:space:]]*newTag:[[:space:]]*).*$|\1'"${IMAGE_TAG}"'|' "${TARGET_FILE}"
 
           if git diff --quiet -- "${TARGET_FILE}"; then
             echo "No GitOps changes detected for prod"
