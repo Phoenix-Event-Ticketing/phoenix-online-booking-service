@@ -19,7 +19,7 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-RUN addgroup -S spring && adduser -S spring -G spring
+RUN addgroup -g 10001 -S spring && adduser -S -D -H -u 10001 -G spring spring
 
 COPY --from=extract /app/layers/dependencies/ ./
 COPY --from=extract /app/layers/spring-boot-loader/ ./
@@ -28,6 +28,6 @@ COPY --from=extract /app/layers/application/ ./
 
 EXPOSE 8083
 
-USER spring
+USER 10001:10001
 
 ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
