@@ -69,7 +69,7 @@ public class BookingServiceImpl implements BookingService {
                 .ticketType(request.getTicketType())
                 .quantity(request.getQuantity())
                 .totalAmount(request.getTotalAmount())
-                .inventoryReservationId(holdResponse.getReservationId())
+                .inventoryReservationId(holdResponse.getBookingId())
                 .bookingStatus(BookingStatus.PENDING)
                 .paymentStatus(PaymentStatus.PENDING)
                 .createdAt(now)
@@ -83,7 +83,7 @@ public class BookingServiceImpl implements BookingService {
 
             return mapToResponse(savedBooking);
         } catch (RuntimeException ex) {
-            safelyReleaseReservation(holdResponse.getReservationId(), bookingId);
+            safelyReleaseReservation(bookingId);
 
             log.error("booking creation failed after inventory hold", Map.of(), ex);
 
@@ -250,10 +250,7 @@ public class BookingServiceImpl implements BookingService {
 
         validateCancelableState(booking);
 
-        safelyReleaseReservation(
-                booking.getInventoryReservationId(),
-                booking.getBookingId()
-        );
+        safelyReleaseReservation(booking.getBookingId());
 
         booking.setBookingStatus(BookingStatus.CANCELLED);
         booking.setPaymentStatus(PaymentStatus.FAILED);
@@ -274,10 +271,7 @@ public class BookingServiceImpl implements BookingService {
 
         validateExpirableState(booking);
 
-        safelyReleaseReservation(
-                booking.getInventoryReservationId(),
-                booking.getBookingId()
-        );
+        safelyReleaseReservation(booking.getBookingId());
 
         booking.setBookingStatus(BookingStatus.EXPIRED);
         booking.setPaymentStatus(PaymentStatus.FAILED);
@@ -292,7 +286,6 @@ public class BookingServiceImpl implements BookingService {
 
     private void handleSuccessfulPayment(Booking booking, PaymentCallbackRequest request) {
         inventoryServiceClient.confirmTickets(
-                booking.getInventoryReservationId(),
                 booking.getBookingId()
         );
 
@@ -304,10 +297,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void handleFailedPayment(Booking booking, PaymentCallbackRequest request) {
-        safelyReleaseReservation(
-                booking.getInventoryReservationId(),
-                booking.getBookingId()
-        );
+        safelyReleaseReservation(booking.getBookingId());
 
         booking.setPaymentStatus(PaymentStatus.FAILED);
         booking.setBookingStatus(BookingStatus.FAILED);
@@ -365,10 +355,10 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new BookingNotFoundException("Booking not found for ID: " + bookingId));
     }
 
-    private void safelyReleaseReservation(String reservationId, String bookingId) {
+    private void safelyReleaseReservation(String bookingId) {
         try {
-            if (reservationId != null && !reservationId.isBlank()) {
-                inventoryServiceClient.releaseTickets(reservationId, bookingId);
+            if (bookingId != null && !bookingId.isBlank()) {
+                inventoryServiceClient.releaseTickets(bookingId);
             }
         } catch (Exception ignored) {
             log.warn("inventory release failed during compensation", Map.of());

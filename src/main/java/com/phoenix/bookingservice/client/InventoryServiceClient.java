@@ -1,9 +1,15 @@
 package com.phoenix.bookingservice.client;
 
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -18,6 +24,7 @@ import com.phoenix.bookingservice.client.dto.ReleaseInventoryRequest;
 import com.phoenix.bookingservice.exception.BusinessValidationException;
 import com.phoenix.bookingservice.exception.ExternalServiceException;
 import com.phoenix.bookingservice.logging.StructuredLogger;
+import com.phoenix.bookingservice.security.InternalServiceTokenProvider;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,22 +37,23 @@ public class InventoryServiceClient {
     private static final String INVENTORY_SERVICE = "inventory-service";
 
     private final RestTemplate restTemplate;
+    private final InternalServiceTokenProvider internalServiceTokenProvider;
 
     @Value("${services.inventory.base-url}")
     private String inventoryServiceBaseUrl;
 
     public void checkAvailability(String eventId, String ticketType, Integer quantity) {
         String url = inventoryServiceBaseUrl
-                + "/inventory/availability?eventId={eventId}&ticketType={ticketType}";
+                + "/inventory/event/" + eventId + "/availability";
 
         log.info("calling inventory service for availability check", Map.of(TARGET_SERVICE, INVENTORY_SERVICE));
 
         try {
-            ResponseEntity<InventoryAvailabilityResponse> response = restTemplate.getForEntity(
+            ResponseEntity<InventoryAvailabilityResponse> response = restTemplate.exchange(
                     url,
-                    InventoryAvailabilityResponse.class,
-                    eventId,
-                    ticketType
+                    HttpMethod.GET,
+                    new HttpEntity<>(buildAuthHeaders()),
+                    InventoryAvailabilityResponse.class
             );
 
             InventoryAvailabilityResponse body = response.getBody();
@@ -54,10 +62,16 @@ public class InventoryServiceClient {
                 throw new ExternalServiceException("Invalid response received from Inventory Service");
             }
 
-            boolean available = Boolean.TRUE.equals(body.getAvailable());
-            int availableQuantity = body.getAvailableQuantity() == null ? 0 : body.getAvailableQuantity();
+            int availableQuantity = Optional.ofNullable(body.getItems())
+                    .orElseGet(java.util.List::of)
+                    .stream()
+                    .filter(item -> ticketType.equalsIgnoreCase(item.getTicketType()))
+                    .map(InventoryAvailabilityResponse.AvailabilityItem::getAvailableQuantity)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(0);
 
-            if (!available || availableQuantity < quantity) {
+            if (availableQuantity < quantity) {
                 throw new BusinessValidationException("Requested ticket quantity is not available");
             }
 
@@ -92,11 +106,16 @@ public class InventoryServiceClient {
 
         try {
             ResponseEntity<HoldInventoryResponse> response =
-                    restTemplate.postForEntity(url, request, HoldInventoryResponse.class);
+                    restTemplate.exchange(
+                            url,
+                            HttpMethod.POST,
+                            new HttpEntity<>(request, buildAuthHeaders()),
+                            HoldInventoryResponse.class
+                    );
 
             HoldInventoryResponse body = response.getBody();
 
-            if (!response.getStatusCode().is2xxSuccessful() || body == null || body.getReservationId() == null) {
+            if (!response.getStatusCode().is2xxSuccessful() || body == null || body.getBookingId() == null) {
                 throw new ExternalServiceException("Invalid hold response received from Inventory Service");
             }
 
@@ -115,15 +134,20 @@ public class InventoryServiceClient {
         }
     }
 
-    public void confirmTickets(String reservationId, String bookingId) {
+    public void confirmTickets(String bookingId) {
         String url = inventoryServiceBaseUrl + "/inventory/confirm";
 
-        ConfirmInventoryRequest request = new ConfirmInventoryRequest(reservationId, bookingId);
+        ConfirmInventoryRequest request = new ConfirmInventoryRequest(bookingId);
 
         log.info("calling inventory service to confirm held tickets", Map.of(TARGET_SERVICE, INVENTORY_SERVICE));
 
         try {
-            restTemplate.postForEntity(url, request, Void.class);
+            restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    new HttpEntity<>(request, buildAuthHeaders()),
+                    Void.class
+            );
 
             log.info("inventory confirmation succeeded", Map.of(TARGET_SERVICE, INVENTORY_SERVICE));
         } catch (RestClientException ex) {
@@ -133,15 +157,20 @@ public class InventoryServiceClient {
         }
     }
 
-    public void releaseTickets(String reservationId, String bookingId) {
+    public void releaseTickets(String bookingId) {
         String url = inventoryServiceBaseUrl + "/inventory/release";
 
-        ReleaseInventoryRequest request = new ReleaseInventoryRequest(reservationId, bookingId);
+        ReleaseInventoryRequest request = new ReleaseInventoryRequest(bookingId);
 
         log.info("calling inventory service to release held tickets", Map.of(TARGET_SERVICE, INVENTORY_SERVICE));
 
         try {
-            restTemplate.postForEntity(url, request, Void.class);
+            restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    new HttpEntity<>(request, buildAuthHeaders()),
+                    Void.class
+            );
 
             log.info("inventory release succeeded", Map.of(TARGET_SERVICE, INVENTORY_SERVICE));
         } catch (RestClientException ex) {
@@ -149,5 +178,12 @@ public class InventoryServiceClient {
 
             throw new ExternalServiceException("Failed to release reserved tickets through Inventory Service", ex);
         }
+    }
+
+    private HttpHeaders buildAuthHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(internalServiceTokenProvider.createServiceToken());
+        return headers;
     }
 }

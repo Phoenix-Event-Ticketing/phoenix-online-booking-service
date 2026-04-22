@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class HoldInventoryResponse {
-    private String reservationId;
-    private String status;
+    private String bookingId;
+    private String holdStatus;
     private Instant expiresAt;
 }

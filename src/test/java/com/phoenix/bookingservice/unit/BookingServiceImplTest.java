@@ -137,7 +137,7 @@ class BookingServiceImplTest {
 
         when(bookingRepository.existsByBookingId(anyString())).thenReturn(false);
         when(inventoryServiceClient.holdTickets(anyString(), eq("EVT-1001"), eq("VIP"), eq(2)))
-                .thenReturn(new HoldInventoryResponse("RES-001", "HELD", Instant.now().plusSeconds(300)));
+                .thenReturn(new HoldInventoryResponse("BKG-ABC1234567", "HELD", Instant.now().plusSeconds(300)));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
             Booking booking = invocation.getArgument(0);
             booking.setId("mongo-1");
@@ -189,7 +189,7 @@ class BookingServiceImplTest {
 
         BookingResponse response = bookingService.handlePaymentCallback(request);
 
-        verify(inventoryServiceClient).confirmTickets("RES-001", "BKG-ABC1234567");
+        verify(inventoryServiceClient).confirmTickets("BKG-ABC1234567");
         assertEquals(BookingStatus.CONFIRMED, response.getBookingStatus());
         assertEquals(PaymentStatus.SUCCESS, response.getPaymentStatus());
         assertEquals("TXN-0001", response.getPaymentTransactionId());
@@ -205,7 +205,7 @@ class BookingServiceImplTest {
 
         BookingResponse response = bookingService.cancelBooking("BKG-ABC1234567");
 
-        verify(inventoryServiceClient).releaseTickets("RES-001", "BKG-ABC1234567");
+        verify(inventoryServiceClient).releaseTickets("BKG-ABC1234567");
         assertEquals(BookingStatus.CANCELLED, response.getBookingStatus());
         assertEquals(PaymentStatus.FAILED, response.getPaymentStatus());
     }
@@ -220,7 +220,7 @@ class BookingServiceImplTest {
 
         BookingResponse response = bookingService.expireBooking("BKG-ABC1234567");
 
-        verify(inventoryServiceClient).releaseTickets("RES-001", "BKG-ABC1234567");
+        verify(inventoryServiceClient).releaseTickets("BKG-ABC1234567");
         assertEquals(BookingStatus.EXPIRED, response.getBookingStatus());
         assertEquals(PaymentStatus.FAILED, response.getPaymentStatus());
     }
