@@ -44,15 +44,27 @@ springdoc:
     path: /swagger-ui.html
 
 management:
+  tracing:
+    enabled: ${TRACING_ENABLED:true}
+    sampling:
+      probability: ${OTEL_TRACES_SAMPLER:1.0}
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       probes:
         enabled: true
       show-details: never
+    prometheus:
+      access: unrestricted
+  metrics:
+    tags:
+      service: ${OTEL_SERVICE_NAME:booking-service}
+  otlp:
+    tracing:
+      endpoint: ${JAEGER_ENDPOINT:http://jaeger-collector:4318/v1/traces}
 
 info:
   app:

@@ -25,11 +25,26 @@ import com.phoenix.bookingservice.exception.BusinessValidationException;
 import com.phoenix.bookingservice.logging.StructuredLogger;
 import com.phoenix.bookingservice.repository.BookingRepository;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
+    private final Counter inventoryHoldSuccess = Counter.builder("booking_inventory_hold_total")
+            .tag("status", "success")
+            .register(Metrics.globalRegistry);
+    private final Counter inventoryHoldFailure = Counter.builder("booking_inventory_hold_total")
+            .tag("status", "error")
+            .register(Metrics.globalRegistry);
+    private final Counter externalDependencyErrors = Counter.builder("booking_external_dependency_errors_total")
+            .register(Metrics.globalRegistry);
+    private final Timer inventoryConfirmTimer = Timer.builder("booking_inventory_confirm_duration_seconds")
+            .publishPercentileHistogram()
+            .register(Metrics.globalRegistry);
+
 
     private static final StructuredLogger log = StructuredLogger.getLogger(BookingServiceImpl.class);
 
@@ -51,12 +66,20 @@ public class BookingServiceImpl implements BookingService {
 
         String bookingId = generateUniqueBookingId();
 
-        HoldInventoryResponse holdResponse = inventoryServiceClient.holdTickets(
-                bookingId,
-                request.getEventId(),
-                request.getTicketType(),
-                request.getQuantity()
-        );
+        HoldInventoryResponse holdResponse;
+        try {
+            holdResponse = inventoryServiceClient.holdTickets(
+                    bookingId,
+                    request.getEventId(),
+                    request.getTicketType(),
+                    request.getQuantity()
+            );
+            inventoryHoldSuccess.increment();
+        } catch (RuntimeException ex) {
+            inventoryHoldFailure.increment();
+            externalDependencyErrors.increment();
+            throw ex;
+        }
 
         Instant now = Instant.now();
 
@@ -285,9 +308,14 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void handleSuccessfulPayment(Booking booking, PaymentCallbackRequest request) {
-        inventoryServiceClient.confirmTickets(
-                booking.getBookingId()
-        );
+        try {
+            inventoryConfirmTimer.record(() -> inventoryServiceClient.confirmTickets(
+                    booking.getBookingId()
+            ));
+        } catch (RuntimeException ex) {
+            externalDependencyErrors.increment();
+            throw ex;
+        }
 
         booking.setPaymentStatus(PaymentStatus.SUCCESS);
         booking.setBookingStatus(BookingStatus.CONFIRMED);

@@ -11,39 +11,40 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.phoenix.bookingservice.logging.RequestContext;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BookingNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleBookingNotFound(BookingNotFoundException ex) {
+    private Map<String, Object> baseBody(HttpStatus status, String error, String errorCode, String message) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", Instant.now());
-        body.put("status", HttpStatus.NOT_FOUND.value());
-        body.put("error", "Not Found");
-        body.put("message", ex.getMessage());
+        body.put("status", status.value());
+        body.put("error", error);
+        body.put("errorCode", errorCode);
+        body.put("message", message);
+        body.put("requestId", RequestContext.getRequestId());
+        body.put("traceId", RequestContext.getTraceId());
+        return body;
+    }
 
+    @ExceptionHandler(BookingNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleBookingNotFound(BookingNotFoundException ex) {
+        Map<String, Object> body = baseBody(HttpStatus.NOT_FOUND, "Not Found", "BOOKING_NOT_FOUND", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
     @ExceptionHandler(BusinessValidationException.class)
     public ResponseEntity<Map<String, Object>> handleBusinessValidation(BusinessValidationException ex) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", Instant.now());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", "Business Validation Failed");
-        body.put("message", ex.getMessage());
-
+        Map<String, Object> body = baseBody(HttpStatus.BAD_REQUEST, "Business Validation Failed", "VALIDATION_FAILED",
+                ex.getMessage());
         return ResponseEntity.badRequest().body(body);
     }
 
     @ExceptionHandler(ExternalServiceException.class)
     public ResponseEntity<Map<String, Object>> handleExternalService(ExternalServiceException ex) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", Instant.now());
-        body.put("status", HttpStatus.BAD_GATEWAY.value());
-        body.put("error", "External Service Error");
-        body.put("message", ex.getMessage());
-
+        Map<String, Object> body = baseBody(HttpStatus.BAD_GATEWAY, "External Service Error", "EXTERNAL_SERVICE_ERROR",
+                ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body);
     }
 
@@ -55,11 +56,8 @@ public class GlobalExceptionHandler {
             validationErrors.put(error.getField(), error.getDefaultMessage());
         }
 
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", Instant.now());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", "Validation Failed");
-        body.put("message", "Request validation failed");
+        Map<String, Object> body = baseBody(HttpStatus.BAD_REQUEST, "Validation Failed", "VALIDATION_FAILED",
+                "Request validation failed");
         body.put("details", validationErrors);
 
         return ResponseEntity.badRequest().body(body);
@@ -67,12 +65,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", Instant.now());
-        body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        body.put("error", "Internal Server Error");
-        body.put("message", ex.getMessage());
-
+        Map<String, Object> body = baseBody(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "INTERNAL_ERROR",
+                ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }
 }
