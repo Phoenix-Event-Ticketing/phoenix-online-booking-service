@@ -24,6 +24,7 @@ public class EventServiceClient {
     private static final StructuredLogger log = StructuredLogger.getLogger(EventServiceClient.class);
     private static final String TARGET_SERVICE = "targetService";
     private static final String EVENT_SERVICE = "event-service";
+    private static final String EVENT_STATUS_PUBLISHED = "PUBLISHED";
 
     private final RestTemplate restTemplate;
 
@@ -41,12 +42,12 @@ public class EventServiceClient {
 
             EventSummaryResponse body = response.getBody();
 
-            if (!response.getStatusCode().is2xxSuccessful() || body == null) {
+            if (!response.getStatusCode().is2xxSuccessful() || body == null || body.getStatus() == null) {
                 throw new ExternalServiceException("Invalid response received from Event Service");
             }
 
-            if (Boolean.FALSE.equals(body.getActive())) {
-                throw new BusinessValidationException("Selected event is not active");
+            if (!EVENT_STATUS_PUBLISHED.equalsIgnoreCase(body.getStatus())) {
+                throw new BusinessValidationException("Selected event is not available for booking");
             }
 
             log.info("event validation succeeded", Map.of(TARGET_SERVICE, EVENT_SERVICE));

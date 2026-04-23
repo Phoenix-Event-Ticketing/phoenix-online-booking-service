@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class EventSummaryResponse {
     private String eventId;
-    private String name;
-    private Boolean active;
+    private String title;
+    private String status;
 }
