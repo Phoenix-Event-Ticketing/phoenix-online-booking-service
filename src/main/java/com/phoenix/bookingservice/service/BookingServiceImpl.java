@@ -1,6 +1,7 @@
 package com.phoenix.bookingservice.service;
 
 import java.time.Instant;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,6 +30,7 @@ import com.phoenix.bookingservice.repository.BookingRepository;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -45,6 +47,14 @@ public class BookingServiceImpl implements BookingService {
     private final Timer inventoryConfirmTimer = Timer.builder("booking_inventory_confirm_duration_seconds")
             .publishPercentileHistogram()
             .register(Metrics.globalRegistry);
+    private final Counter paymentCallbackNoop = Counter.builder("booking_payment_callback_total")
+            .tag("result", "noop")
+            .register(Metrics.globalRegistry);
+    private final Counter paymentCallbackApplied = Counter.builder("booking_payment_callback_total")
+            .tag("result", "applied")
+            .register(Metrics.globalRegistry);
+    private final Counter autoExpiredBookings = Counter.builder("booking_auto_expire_total")
+            .register(Metrics.globalRegistry);
 
 
     private static final StructuredLogger log = StructuredLogger.getLogger(BookingServiceImpl.class);
@@ -53,6 +63,8 @@ public class BookingServiceImpl implements BookingService {
     private final EventServiceClient eventServiceClient;
     private final InventoryServiceClient inventoryServiceClient;
     private final PaymentServiceClient paymentServiceClient;
+    @Value("${booking.payment-timeout-minutes:15}")
+    private long paymentTimeoutMinutes;
 
     @Override
     public BookingResponse createBooking(CreateBookingRequest request) {
@@ -264,6 +276,11 @@ public class BookingServiceImpl implements BookingService {
         }
 
         String normalizedStatus = request.getPaymentStatus().trim().toUpperCase();
+        if (isDuplicateCallbackNoop(booking, normalizedStatus)) {
+            paymentCallbackNoop.increment();
+            log.info("duplicate payment callback ignored", Map.of());
+            return mapToResponse(booking);
+        }
 
         switch (normalizedStatus) {
             case "SUCCESS" -> handleSuccessfulPayment(booking, request);
@@ -275,6 +292,7 @@ public class BookingServiceImpl implements BookingService {
 
         booking.setUpdatedAt(Instant.now());
         Booking savedBooking = bookingRepository.save(booking);
+        paymentCallbackApplied.increment();
 
         log.info("payment callback processed", Map.of());
 
@@ -323,6 +341,29 @@ public class BookingServiceImpl implements BookingService {
         return mapToResponse(savedBooking);
     }
 
+    public int expireStalePendingBookings() {
+        Instant cutoff = Instant.now().minus(Duration.ofMinutes(Math.max(paymentTimeoutMinutes, 1)));
+        List<Booking> staleBookings = bookingRepository.findByBookingStatusInAndPaymentStatusAndUpdatedAtBefore(
+                List.of(BookingStatus.PENDING, BookingStatus.AWAITING_PAYMENT),
+                PaymentStatus.PENDING,
+                cutoff
+        );
+        int expired = 0;
+        for (Booking booking : staleBookings) {
+            try {
+                expireBooking(booking.getBookingId());
+                expired++;
+            } catch (RuntimeException ex) {
+                log.warn("auto expiry skipped for booking", Map.of());
+            }
+        }
+        if (expired > 0) {
+            autoExpiredBookings.increment(expired);
+            log.info("auto expiry completed", Map.of("expired", expired));
+        }
+        return expired;
+    }
+
     private void handleSuccessfulPayment(Booking booking, PaymentCallbackRequest request) {
         try {
             inventoryConfirmTimer.record(() -> inventoryServiceClient.confirmTickets(
@@ -348,6 +389,18 @@ public class BookingServiceImpl implements BookingService {
         booking.setPaymentTransactionId(request.getTransactionId());
 
         log.warn("payment marked as failed", Map.of());
+    }
+
+    private boolean isDuplicateCallbackNoop(Booking booking, String normalizedStatus) {
+        return ("SUCCESS".equals(normalizedStatus)
+                && booking.getBookingStatus() == BookingStatus.CONFIRMED
+                && booking.getPaymentStatus() == PaymentStatus.SUCCESS)
+                || ("FAILED".equals(normalizedStatus)
+                && booking.getBookingStatus() == BookingStatus.FAILED
+                && booking.getPaymentStatus() == PaymentStatus.FAILED)
+                || ("PENDING".equals(normalizedStatus)
+                && booking.getBookingStatus() == BookingStatus.AWAITING_PAYMENT
+                && booking.getPaymentStatus() == PaymentStatus.PENDING);
     }
 
     private void handlePendingPayment(Booking booking, PaymentCallbackRequest request) {

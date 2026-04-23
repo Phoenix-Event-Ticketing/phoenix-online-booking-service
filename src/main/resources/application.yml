@@ -39,6 +39,10 @@ services:
   payment:
     base-url: ${PAYMENT_SERVICE_BASE_URL:http://localhost:8084}
 
+booking:
+  payment-timeout-minutes: ${BOOKING_PAYMENT_TIMEOUT_MINUTES:15}
+  expiry-scan-interval-ms: ${BOOKING_EXPIRY_SCAN_INTERVAL_MS:60000}
+
 springdoc:
   api-docs:
     path: /api-docs

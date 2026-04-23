@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -207,6 +208,29 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void handlePaymentCallback_duplicateSuccess_shouldNoop() {
+        baseBooking.setPaymentReferenceId("PAY-123456");
+        baseBooking.setBookingStatus(BookingStatus.CONFIRMED);
+        baseBooking.setPaymentStatus(PaymentStatus.SUCCESS);
+
+        PaymentCallbackRequest request = new PaymentCallbackRequest(
+                "BKG-ABC1234567",
+                "PAY-123456",
+                "SUCCESS",
+                "TXN-0001"
+        );
+
+        when(bookingRepository.findByBookingId("BKG-ABC1234567")).thenReturn(Optional.of(baseBooking));
+
+        BookingResponse response = bookingService.handlePaymentCallback(request);
+
+        verify(inventoryServiceClient, never()).confirmTickets(anyString());
+        verify(bookingRepository, never()).save(any(Booking.class));
+        assertEquals(BookingStatus.CONFIRMED, response.getBookingStatus());
+        assertEquals(PaymentStatus.SUCCESS, response.getPaymentStatus());
+    }
+
+    @Test
     void cancelBooking_shouldReleaseInventoryAndMarkCancelled() {
         baseBooking.setBookingStatus(BookingStatus.AWAITING_PAYMENT);
         baseBooking.setPaymentStatus(PaymentStatus.PENDING);
@@ -234,5 +258,35 @@ class BookingServiceImplTest {
         verify(inventoryServiceClient).releaseTickets("BKG-ABC1234567");
         assertEquals(BookingStatus.EXPIRED, response.getBookingStatus());
         assertEquals(PaymentStatus.FAILED, response.getPaymentStatus());
+    }
+
+    @Test
+    void expireStalePendingBookings_shouldExpirePendingAndAwaitingPayment() {
+        Booking pendingBooking = Booking.builder()
+                .bookingId("BKG-PENDING-001")
+                .bookingStatus(BookingStatus.PENDING)
+                .paymentStatus(PaymentStatus.PENDING)
+                .build();
+        Booking awaitingBooking = Booking.builder()
+                .bookingId("BKG-AWAIT-001")
+                .bookingStatus(BookingStatus.AWAITING_PAYMENT)
+                .paymentStatus(PaymentStatus.PENDING)
+                .build();
+
+        when(bookingRepository.findByBookingStatusInAndPaymentStatusAndUpdatedAtBefore(
+                any(),
+                eq(PaymentStatus.PENDING),
+                any(Instant.class)
+        )).thenReturn(List.of(pendingBooking, awaitingBooking));
+
+        when(bookingRepository.findByBookingId("BKG-PENDING-001")).thenReturn(Optional.of(pendingBooking));
+        when(bookingRepository.findByBookingId("BKG-AWAIT-001")).thenReturn(Optional.of(awaitingBooking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        int expired = bookingService.expireStalePendingBookings();
+
+        assertEquals(2, expired);
+        verify(inventoryServiceClient).releaseTickets("BKG-PENDING-001");
+        verify(inventoryServiceClient).releaseTickets("BKG-AWAIT-001");
     }
 }
