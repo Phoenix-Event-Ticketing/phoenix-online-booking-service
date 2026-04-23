@@ -1,5 +1,6 @@
 package com.phoenix.bookingservice.client;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -42,7 +43,11 @@ public class InventoryServiceClient {
     @Value("${services.inventory.base-url}")
     private String inventoryServiceBaseUrl;
 
-    public void checkAvailability(String eventId, String ticketType, Integer quantity) {
+    public InventoryAvailabilityResponse.AvailabilityItem checkAvailability(
+            String eventId,
+            String ticketType,
+            Integer quantity
+    ) {
         String url = inventoryServiceBaseUrl
                 + "/inventory/event/" + eventId + "/availability";
 
@@ -62,20 +67,28 @@ public class InventoryServiceClient {
                 throw new ExternalServiceException("Invalid response received from Inventory Service");
             }
 
-            int availableQuantity = Optional.ofNullable(body.getItems())
+            InventoryAvailabilityResponse.AvailabilityItem matchedItem = Optional.ofNullable(body.getItems())
                     .orElseGet(java.util.List::of)
                     .stream()
                     .filter(item -> ticketType.equalsIgnoreCase(item.getTicketType()))
+                    .findFirst()
+                    .orElse(null);
+
+            int availableQuantity = Optional.ofNullable(matchedItem)
                     .map(InventoryAvailabilityResponse.AvailabilityItem::getAvailableQuantity)
                     .filter(Objects::nonNull)
-                    .findFirst()
                     .orElse(0);
 
             if (availableQuantity < quantity) {
                 throw new BusinessValidationException("Requested ticket quantity is not available");
             }
 
+            if (matchedItem == null || matchedItem.getPrice() == null || matchedItem.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new ExternalServiceException("Inventory availability response did not include a valid ticket price");
+            }
+
             log.info("inventory availability check succeeded", Map.of(TARGET_SERVICE, INVENTORY_SERVICE));
+            return matchedItem;
 
         } catch (HttpStatusCodeException ex) {
             if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {

@@ -26,6 +26,7 @@ import com.phoenix.bookingservice.client.InventoryServiceClient;
 import com.phoenix.bookingservice.client.PaymentServiceClient;
 import com.phoenix.bookingservice.client.dto.CreatePaymentResponse;
 import com.phoenix.bookingservice.client.dto.HoldInventoryResponse;
+import com.phoenix.bookingservice.client.dto.InventoryAvailabilityResponse;
 import com.phoenix.bookingservice.dto.BookingResponse;
 import com.phoenix.bookingservice.dto.CreateBookingRequest;
 import com.phoenix.bookingservice.dto.PaymentCallbackRequest;
@@ -136,6 +137,16 @@ class BookingServiceImplTest {
         );
 
         when(bookingRepository.existsByBookingId(anyString())).thenReturn(false);
+        when(inventoryServiceClient.checkAvailability("EVT-1001", "VIP", 2))
+                .thenReturn(new InventoryAvailabilityResponse.AvailabilityItem(
+                        "inv-1",
+                        "VIP",
+                        new BigDecimal("2500.00"),
+                        10,
+                        0,
+                        0,
+                        10
+                ));
         when(inventoryServiceClient.holdTickets(anyString(), eq("EVT-1001"), eq("VIP"), eq(2)))
                 .thenReturn(new HoldInventoryResponse("BKG-ABC1234567", "HELD", Instant.now().plusSeconds(300)));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
@@ -160,7 +171,7 @@ class BookingServiceImplTest {
     void startPayment_shouldCreatePaymentAndUpdateBooking() {
         when(bookingRepository.findByBookingId("BKG-ABC1234567")).thenReturn(Optional.of(baseBooking));
         when(paymentServiceClient.createPayment(any(Booking.class)))
-                .thenReturn(new CreatePaymentResponse("PAY-123456", "PENDING"));
+                .thenReturn(new CreatePaymentResponse("PAY-123456", "PENDING", "PAY-123456", "PAY-123456"));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         StartPaymentResponse response = bookingService.startPayment("BKG-ABC1234567");

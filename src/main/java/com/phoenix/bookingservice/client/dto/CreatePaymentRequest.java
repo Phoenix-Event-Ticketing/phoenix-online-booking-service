@@ -12,6 +12,11 @@ import lombok.NoArgsConstructor;
 public class CreatePaymentRequest {
     private String bookingId;
     private BigDecimal amount;
+    private String currency;
+    private String paymentMethod;
+    /**
+     * Kept for phased compatibility with older payment-service parsers.
+     */
     private String customerEmail;
     private String callbackUrl;
     private String description;

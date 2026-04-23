@@ -3,6 +3,10 @@ package com.phoenix.bookingservice.client;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -14,6 +18,7 @@ import com.phoenix.bookingservice.client.dto.CreatePaymentResponse;
 import com.phoenix.bookingservice.entity.Booking;
 import com.phoenix.bookingservice.exception.ExternalServiceException;
 import com.phoenix.bookingservice.logging.StructuredLogger;
+import com.phoenix.bookingservice.security.InternalServiceTokenProvider;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +31,7 @@ public class PaymentServiceClient {
     private static final String PAYMENT_SERVICE = "payment-service";
 
     private final RestTemplate restTemplate;
+    private final InternalServiceTokenProvider internalServiceTokenProvider;
 
     @Value("${services.payment.base-url}")
     private String paymentServiceBaseUrl;
@@ -39,6 +45,8 @@ public class PaymentServiceClient {
         CreatePaymentRequest request = new CreatePaymentRequest(
                 booking.getBookingId(),
                 booking.getTotalAmount(),
+                "LKR",
+                "CARD",
                 booking.getCustomerEmail(),
                 bookingServiceCallbackBaseUrl + "/bookings/payment-callback",
                 "Ticket booking payment for " + booking.getBookingId()
@@ -47,10 +55,16 @@ public class PaymentServiceClient {
         log.info("calling payment service to create payment", Map.of(TARGET_SERVICE, PAYMENT_SERVICE));
 
         try {
-            ResponseEntity<CreatePaymentResponse> response =
-                    restTemplate.postForEntity(url, request, CreatePaymentResponse.class);
-
-            CreatePaymentResponse body = response.getBody();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(internalServiceTokenProvider.createServiceToken());
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    new HttpEntity<>(request, headers),
+                    Map.class
+            );
+            CreatePaymentResponse body = normalizeCreatePaymentResponse(response.getBody());
 
             if (!response.getStatusCode().is2xxSuccessful()
                     || body == null
@@ -72,5 +86,44 @@ public class PaymentServiceClient {
 
             throw new ExternalServiceException("Failed to communicate with Payment Service", ex);
         }
+    }
+
+    private CreatePaymentResponse normalizeCreatePaymentResponse(Map<?, ?> payload) {
+        if (payload == null) {
+            return null;
+        }
+        Map<?, ?> data = payload;
+        Object nestedData = payload.get("data");
+        if (nestedData instanceof Map<?, ?> nested) {
+            data = nested;
+        }
+
+        String paymentReferenceId = firstNonBlank(
+                asString(data.get("paymentReferenceId")),
+                asString(data.get("paymentId")),
+                asString(data.get("id"))
+        );
+        String status = asString(data.get("status"));
+        String paymentId = firstNonBlank(asString(data.get("paymentId")), asString(data.get("id")));
+        String id = asString(data.get("id"));
+
+        return new CreatePaymentResponse(paymentReferenceId, status, paymentId, id);
+    }
+
+    private String asString(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.toString().trim();
+        return normalized.isBlank() ? null : normalized;
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 }

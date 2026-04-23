@@ -12,6 +12,7 @@ import com.phoenix.bookingservice.client.InventoryServiceClient;
 import com.phoenix.bookingservice.client.PaymentServiceClient;
 import com.phoenix.bookingservice.client.dto.CreatePaymentResponse;
 import com.phoenix.bookingservice.client.dto.HoldInventoryResponse;
+import com.phoenix.bookingservice.client.dto.InventoryAvailabilityResponse;
 import com.phoenix.bookingservice.dto.BookingResponse;
 import com.phoenix.bookingservice.dto.CreateBookingRequest;
 import com.phoenix.bookingservice.dto.UpdateBookingRequest;
@@ -58,11 +59,12 @@ public class BookingServiceImpl implements BookingService {
         log.info("booking creation started", Map.of());
 
         eventServiceClient.verifyEventExistsAndIsActive(request.getEventId());
-        inventoryServiceClient.checkAvailability(
+        InventoryAvailabilityResponse.AvailabilityItem matchedInventory = inventoryServiceClient.checkAvailability(
                 request.getEventId(),
                 request.getTicketType(),
                 request.getQuantity()
         );
+        validateAmountAgainstInventory(request, matchedInventory);
 
         String bookingId = generateUniqueBookingId();
 
@@ -111,6 +113,20 @@ public class BookingServiceImpl implements BookingService {
             log.error("booking creation failed after inventory hold", Map.of(), ex);
 
             throw ex;
+        }
+    }
+
+    private void validateAmountAgainstInventory(
+            CreateBookingRequest request,
+            InventoryAvailabilityResponse.AvailabilityItem matchedInventory
+    ) {
+        if (matchedInventory == null || matchedInventory.getPrice() == null) {
+            throw new BusinessValidationException("Unable to validate booking amount with inventory price");
+        }
+        java.math.BigDecimal expectedTotal =
+                matchedInventory.getPrice().multiply(java.math.BigDecimal.valueOf(request.getQuantity().longValue()));
+        if (request.getTotalAmount().compareTo(expectedTotal) != 0) {
+            throw new BusinessValidationException("Booking totalAmount does not match current inventory price");
         }
     }
 
