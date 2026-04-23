@@ -1,11 +1,15 @@
 package com.phoenix.bookingservice.security;
 
 import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.OPTIONS;
 import static org.springframework.http.HttpMethod.PATCH;
 import static org.springframework.http.HttpMethod.POST;
 
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -13,19 +17,25 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    private final List<String> allowedOrigins;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final InternalServiceAuthFilter internalServiceAuthFilter;
 
     public SecurityConfig(
+            @Value("${app.cors.allowed-origins:https://dev.phoenix-project.online,http://localhost:3000}") List<String> allowedOrigins,
             JwtAuthenticationFilter jwtAuthenticationFilter,
             InternalServiceAuthFilter internalServiceAuthFilter
     ) {
+        this.allowedOrigins = allowedOrigins;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.internalServiceAuthFilter = internalServiceAuthFilter;
     }
@@ -49,6 +59,8 @@ public class SecurityConfig {
                             "/actuator/health/**",
                                 "/actuator/info"
                         ).permitAll()
+
+                        .requestMatchers(OPTIONS, "/**").permitAll()
 
                         .requestMatchers(POST, "/bookings/payment-callback")
                         .hasAuthority(BookingPermissions.INTERNAL_SERVICE)
@@ -99,5 +111,20 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization", "Location"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }
