@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CreatePaymentRequest {
     private String bookingId;
+    private String userId;
     private BigDecimal amount;
     private String currency;
     private String paymentMethod;

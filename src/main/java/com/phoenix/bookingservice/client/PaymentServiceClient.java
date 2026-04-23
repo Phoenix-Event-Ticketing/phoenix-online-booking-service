@@ -18,6 +18,7 @@ import com.phoenix.bookingservice.client.dto.CreatePaymentResponse;
 import com.phoenix.bookingservice.entity.Booking;
 import com.phoenix.bookingservice.exception.ExternalServiceException;
 import com.phoenix.bookingservice.logging.StructuredLogger;
+import com.phoenix.bookingservice.security.InternalServicePermissions;
 import com.phoenix.bookingservice.security.InternalServiceTokenProvider;
 
 import lombok.RequiredArgsConstructor;
@@ -40,10 +41,11 @@ public class PaymentServiceClient {
     private String bookingServiceCallbackBaseUrl;
 
     public CreatePaymentResponse createPayment(Booking booking) {
-        String url = paymentServiceBaseUrl + "/payments";
+        String url = paymentServiceBaseUrl + "/internal/payments";
 
         CreatePaymentRequest request = new CreatePaymentRequest(
                 booking.getBookingId(),
+                booking.getUserId(),
                 booking.getTotalAmount(),
                 "LKR",
                 "CARD",
@@ -58,6 +60,7 @@ public class PaymentServiceClient {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.setBearerAuth(internalServiceTokenProvider.createServiceToken());
+            headers.set(InternalServicePermissions.HEADER_SERVICE_ID, "booking-service");
             ResponseEntity<Map> response = restTemplate.exchange(
                     url,
                     HttpMethod.POST,
