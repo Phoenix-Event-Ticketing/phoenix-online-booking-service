@@ -171,13 +171,13 @@ class BookingServiceImplTest {
     @Test
     void startPayment_shouldCreatePaymentAndUpdateBooking() {
         when(bookingRepository.findByBookingId("BKG-ABC1234567")).thenReturn(Optional.of(baseBooking));
-        when(paymentServiceClient.createPayment(any(Booking.class)))
+        when(paymentServiceClient.createPayment(any(Booking.class), anyString()))
                 .thenReturn(new CreatePaymentResponse("PAY-123456", "PENDING", "PAY-123456", "PAY-123456"));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         StartPaymentResponse response = bookingService.startPayment("BKG-ABC1234567", "CARD");
 
-        verify(paymentServiceClient).createPayment(any(Booking.class));
+        verify(paymentServiceClient).createPayment(any(Booking.class), eq("CARD"));
         assertEquals("PAY-123456", response.getPaymentReferenceId());
         assertEquals(BookingStatus.AWAITING_PAYMENT, response.getBookingStatus());
         assertEquals(PaymentStatus.PENDING, response.getPaymentStatus());
