@@ -75,7 +75,7 @@ public class SecurityConfig {
                         .hasAuthority(BookingPermissions.VIEW_ALL_BOOKINGS)
 
                         .requestMatchers(GET, "/bookings/customer/**")
-                        .hasAuthority(BookingPermissions.VIEW_ALL_BOOKINGS)
+                        .hasAuthority(BookingPermissions.VIEW_BOOKINGS)
 
                         .requestMatchers(GET, "/bookings/**")
                         .hasAuthority(BookingPermissions.VIEW_BOOKINGS)
