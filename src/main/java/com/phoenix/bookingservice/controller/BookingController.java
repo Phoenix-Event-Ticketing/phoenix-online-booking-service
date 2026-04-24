@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import com.phoenix.bookingservice.dto.BookingResponse;
 import com.phoenix.bookingservice.dto.CreateBookingRequest;
 import com.phoenix.bookingservice.dto.PaymentCallbackRequest;
+import com.phoenix.bookingservice.dto.StartPaymentRequest;
 import com.phoenix.bookingservice.dto.UpdateBookingRequest;
 import com.phoenix.bookingservice.dto.StartPaymentResponse;
 import com.phoenix.bookingservice.service.BookingService;
@@ -57,8 +58,12 @@ public class BookingController {
     }
 
     @PostMapping("/{bookingId}/start-payment")
-    public StartPaymentResponse startPayment(@PathVariable String bookingId) {
-        return bookingService.startPayment(bookingId);
+    public StartPaymentResponse startPayment(
+            @PathVariable String bookingId,
+            @RequestBody(required = false) StartPaymentRequest request
+    ) {
+        String paymentMethod = request != null ? request.getPaymentMethod() : null;
+        return bookingService.startPayment(bookingId, paymentMethod);
     }
 
     @PostMapping("/{bookingId}/expire")

@@ -73,7 +73,7 @@ class BookingServiceImplTest {
                 .quantity(2)
                 .totalAmount(new BigDecimal("5000.00"))
                 .inventoryReservationId("RES-001")
-                .bookingStatus(BookingStatus.PENDING)
+                .bookingStatus(BookingStatus.AWAITING_PAYMENT)
                 .paymentStatus(PaymentStatus.PENDING)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
@@ -163,7 +163,7 @@ class BookingServiceImplTest {
         verify(inventoryServiceClient).holdTickets(anyString(), eq("EVT-1001"), eq("VIP"), eq(2));
 
         assertNotNull(response.getBookingId());
-        assertEquals(BookingStatus.PENDING, response.getBookingStatus());
+        assertEquals(BookingStatus.AWAITING_PAYMENT, response.getBookingStatus());
         assertEquals(PaymentStatus.PENDING, response.getPaymentStatus());
         assertEquals("EVT-1001", response.getEventId());
     }
@@ -175,7 +175,7 @@ class BookingServiceImplTest {
                 .thenReturn(new CreatePaymentResponse("PAY-123456", "PENDING", "PAY-123456", "PAY-123456"));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        StartPaymentResponse response = bookingService.startPayment("BKG-ABC1234567");
+        StartPaymentResponse response = bookingService.startPayment("BKG-ABC1234567", "CARD");
 
         verify(paymentServiceClient).createPayment(any(Booking.class));
         assertEquals("PAY-123456", response.getPaymentReferenceId());

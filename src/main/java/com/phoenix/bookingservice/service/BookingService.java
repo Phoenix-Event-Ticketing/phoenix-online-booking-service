@@ -20,7 +20,7 @@ public interface BookingService {
 
     List<BookingResponse> getBookingsByCustomerEmail(String email);
 
-    StartPaymentResponse startPayment(String bookingId);
+    StartPaymentResponse startPayment(String bookingId, String paymentMethod);
 
     BookingResponse handlePaymentCallback(PaymentCallbackRequest request);
 

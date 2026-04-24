@@ -107,7 +107,7 @@ public class BookingServiceImpl implements BookingService {
                 .quantity(request.getQuantity())
                 .totalAmount(request.getTotalAmount())
                 .inventoryReservationId(holdResponse.getBookingId())
-                .bookingStatus(BookingStatus.PENDING)
+                .bookingStatus(BookingStatus.AWAITING_PAYMENT)
                 .paymentStatus(PaymentStatus.PENDING)
                 .createdAt(now)
                 .updatedAt(now)
@@ -218,7 +218,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public StartPaymentResponse startPayment(String bookingId) {
+    public StartPaymentResponse startPayment(String bookingId, String paymentMethod) {
         log.info("payment initiation started", Map.of());
 
         Booking booking = findBookingEntityByBookingId(bookingId);
@@ -247,7 +247,7 @@ public class BookingServiceImpl implements BookingService {
             return mapToStartPaymentResponse(booking);
         }
 
-        CreatePaymentResponse paymentResponse = paymentServiceClient.createPayment(booking);
+        CreatePaymentResponse paymentResponse = paymentServiceClient.createPayment(booking, paymentMethod);
 
         booking.setPaymentReferenceId(paymentResponse.getPaymentReferenceId());
         booking.setBookingStatus(BookingStatus.AWAITING_PAYMENT);

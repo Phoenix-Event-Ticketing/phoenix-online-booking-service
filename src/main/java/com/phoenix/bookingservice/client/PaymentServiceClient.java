@@ -40,15 +40,16 @@ public class PaymentServiceClient {
     @Value("${services.booking.callback-base-url}")
     private String bookingServiceCallbackBaseUrl;
 
-    public CreatePaymentResponse createPayment(Booking booking) {
+    public CreatePaymentResponse createPayment(Booking booking, String paymentMethod) {
         String url = paymentServiceBaseUrl + "/internal/payments";
+        String resolvedPaymentMethod = normalizePaymentMethod(paymentMethod);
 
         CreatePaymentRequest request = new CreatePaymentRequest(
                 booking.getBookingId(),
                 booking.getUserId(),
                 booking.getTotalAmount(),
                 "LKR",
-                "CARD",
+                resolvedPaymentMethod,
                 booking.getCustomerEmail(),
                 bookingServiceCallbackBaseUrl + "/bookings/payment-callback",
                 "Ticket booking payment for " + booking.getBookingId()
@@ -128,5 +129,16 @@ public class PaymentServiceClient {
             }
         }
         return null;
+    }
+
+    private String normalizePaymentMethod(String paymentMethod) {
+        if (paymentMethod == null || paymentMethod.isBlank()) {
+            return "CARD";
+        }
+        String normalized = paymentMethod.trim().toUpperCase();
+        return switch (normalized) {
+            case "CARD", "BANK_TRANSFER", "WALLET" -> normalized;
+            default -> "CARD";
+        };
     }
 }
